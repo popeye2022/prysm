@@ -252,6 +252,77 @@ func (x *ProduceBlockResponseV2) GetData() *BeaconBlockContainerV2 {
 	return nil
 }
 
+type ProduceBlockResponseV3 struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Version                 Version                 `protobuf:"varint,1,opt,name=version,proto3,enum=ethereum.eth.v2.Version" json:"version,omitempty"`
+	ExecutionPayloadBlinded bool                    `protobuf:"varint,2,opt,name=execution_payload_blinded,json=executionPayloadBlinded,proto3" json:"execution_payload_blinded,omitempty"`
+	ExeuctionPayloadValue   string                  `protobuf:"bytes,3,opt,name=exeuction_payload_value,json=exeuctionPayloadValue,proto3" json:"exeuction_payload_value,omitempty"`
+	Data                    *BeaconBlockContainerV3 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *ProduceBlockResponseV3) Reset() {
+	*x = ProduceBlockResponseV3{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ProduceBlockResponseV3) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProduceBlockResponseV3) ProtoMessage() {}
+
+func (x *ProduceBlockResponseV3) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProduceBlockResponseV3.ProtoReflect.Descriptor instead.
+func (*ProduceBlockResponseV3) Descriptor() ([]byte, []int) {
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ProduceBlockResponseV3) GetVersion() Version {
+	if x != nil {
+		return x.Version
+	}
+	return Version_PHASE0
+}
+
+func (x *ProduceBlockResponseV3) GetExecutionPayloadBlinded() bool {
+	if x != nil {
+		return x.ExecutionPayloadBlinded
+	}
+	return false
+}
+
+func (x *ProduceBlockResponseV3) GetExeuctionPayloadValue() string {
+	if x != nil {
+		return x.ExeuctionPayloadValue
+	}
+	return ""
+}
+
+func (x *ProduceBlockResponseV3) GetData() *BeaconBlockContainerV3 {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 type ProduceBlindedBlockResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -264,7 +335,7 @@ type ProduceBlindedBlockResponse struct {
 func (x *ProduceBlindedBlockResponse) Reset() {
 	*x = ProduceBlindedBlockResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[4]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -277,7 +348,7 @@ func (x *ProduceBlindedBlockResponse) String() string {
 func (*ProduceBlindedBlockResponse) ProtoMessage() {}
 
 func (x *ProduceBlindedBlockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[4]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -290,7 +361,7 @@ func (x *ProduceBlindedBlockResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProduceBlindedBlockResponse.ProtoReflect.Descriptor instead.
 func (*ProduceBlindedBlockResponse) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{4}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ProduceBlindedBlockResponse) GetVersion() Version {
@@ -318,7 +389,7 @@ type SubmitSyncCommitteeSubscriptionsRequest struct {
 func (x *SubmitSyncCommitteeSubscriptionsRequest) Reset() {
 	*x = SubmitSyncCommitteeSubscriptionsRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[5]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -331,7 +402,7 @@ func (x *SubmitSyncCommitteeSubscriptionsRequest) String() string {
 func (*SubmitSyncCommitteeSubscriptionsRequest) ProtoMessage() {}
 
 func (x *SubmitSyncCommitteeSubscriptionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[5]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -344,7 +415,7 @@ func (x *SubmitSyncCommitteeSubscriptionsRequest) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use SubmitSyncCommitteeSubscriptionsRequest.ProtoReflect.Descriptor instead.
 func (*SubmitSyncCommitteeSubscriptionsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{5}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SubmitSyncCommitteeSubscriptionsRequest) GetData() []*SyncCommitteeSubscription {
@@ -367,7 +438,7 @@ type SyncCommitteeSubscription struct {
 func (x *SyncCommitteeSubscription) Reset() {
 	*x = SyncCommitteeSubscription{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[6]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -380,7 +451,7 @@ func (x *SyncCommitteeSubscription) String() string {
 func (*SyncCommitteeSubscription) ProtoMessage() {}
 
 func (x *SyncCommitteeSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[6]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -393,7 +464,7 @@ func (x *SyncCommitteeSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncCommitteeSubscription.ProtoReflect.Descriptor instead.
 func (*SyncCommitteeSubscription) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{6}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *SyncCommitteeSubscription) GetValidatorIndex() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex {
@@ -430,7 +501,7 @@ type ProduceSyncCommitteeContributionRequest struct {
 func (x *ProduceSyncCommitteeContributionRequest) Reset() {
 	*x = ProduceSyncCommitteeContributionRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[7]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -443,7 +514,7 @@ func (x *ProduceSyncCommitteeContributionRequest) String() string {
 func (*ProduceSyncCommitteeContributionRequest) ProtoMessage() {}
 
 func (x *ProduceSyncCommitteeContributionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[7]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -456,7 +527,7 @@ func (x *ProduceSyncCommitteeContributionRequest) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use ProduceSyncCommitteeContributionRequest.ProtoReflect.Descriptor instead.
 func (*ProduceSyncCommitteeContributionRequest) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{7}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ProduceSyncCommitteeContributionRequest) GetSlot() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot {
@@ -491,7 +562,7 @@ type ProduceSyncCommitteeContributionResponse struct {
 func (x *ProduceSyncCommitteeContributionResponse) Reset() {
 	*x = ProduceSyncCommitteeContributionResponse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[8]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -504,7 +575,7 @@ func (x *ProduceSyncCommitteeContributionResponse) String() string {
 func (*ProduceSyncCommitteeContributionResponse) ProtoMessage() {}
 
 func (x *ProduceSyncCommitteeContributionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[8]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -517,7 +588,7 @@ func (x *ProduceSyncCommitteeContributionResponse) ProtoReflect() protoreflect.M
 
 // Deprecated: Use ProduceSyncCommitteeContributionResponse.ProtoReflect.Descriptor instead.
 func (*ProduceSyncCommitteeContributionResponse) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{8}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProduceSyncCommitteeContributionResponse) GetData() *SyncCommitteeContribution {
@@ -542,7 +613,7 @@ type SyncCommitteeContribution struct {
 func (x *SyncCommitteeContribution) Reset() {
 	*x = SyncCommitteeContribution{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_eth_v2_validator_proto_msgTypes[9]
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -555,7 +626,7 @@ func (x *SyncCommitteeContribution) String() string {
 func (*SyncCommitteeContribution) ProtoMessage() {}
 
 func (x *SyncCommitteeContribution) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_eth_v2_validator_proto_msgTypes[9]
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -568,7 +639,7 @@ func (x *SyncCommitteeContribution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncCommitteeContribution.ProtoReflect.Descriptor instead.
 func (*SyncCommitteeContribution) Descriptor() ([]byte, []int) {
-	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{9}
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *SyncCommitteeContribution) GetSlot() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Slot {
@@ -606,6 +677,56 @@ func (x *SyncCommitteeContribution) GetSignature() []byte {
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+type SubmitContributionAndProofsRequest struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Data []*SignedContributionAndProof `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+}
+
+func (x *SubmitContributionAndProofsRequest) Reset() {
+	*x = SubmitContributionAndProofsRequest{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SubmitContributionAndProofsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SubmitContributionAndProofsRequest) ProtoMessage() {}
+
+func (x *SubmitContributionAndProofsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SubmitContributionAndProofsRequest.ProtoReflect.Descriptor instead.
+func (*SubmitContributionAndProofsRequest) Descriptor() ([]byte, []int) {
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SubmitContributionAndProofsRequest) GetData() []*SignedContributionAndProof {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+>>>>>>> a59e27002b (WIP produce block)
 type ContributionAndProof struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -619,7 +740,11 @@ type ContributionAndProof struct {
 func (x *ContributionAndProof) Reset() {
 	*x = ContributionAndProof{}
 	if protoimpl.UnsafeEnabled {
+<<<<<<< HEAD
 		mi := &file_proto_eth_v2_validator_proto_msgTypes[10]
+=======
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[12]
+>>>>>>> a59e27002b (WIP produce block)
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -632,7 +757,11 @@ func (x *ContributionAndProof) String() string {
 func (*ContributionAndProof) ProtoMessage() {}
 
 func (x *ContributionAndProof) ProtoReflect() protoreflect.Message {
+<<<<<<< HEAD
 	mi := &file_proto_eth_v2_validator_proto_msgTypes[10]
+=======
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[12]
+>>>>>>> a59e27002b (WIP produce block)
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -645,7 +774,11 @@ func (x *ContributionAndProof) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContributionAndProof.ProtoReflect.Descriptor instead.
 func (*ContributionAndProof) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{10}
+=======
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{12}
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func (x *ContributionAndProof) GetAggregatorIndex() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex {
@@ -681,7 +814,11 @@ type SignedContributionAndProof struct {
 func (x *SignedContributionAndProof) Reset() {
 	*x = SignedContributionAndProof{}
 	if protoimpl.UnsafeEnabled {
+<<<<<<< HEAD
 		mi := &file_proto_eth_v2_validator_proto_msgTypes[11]
+=======
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[13]
+>>>>>>> a59e27002b (WIP produce block)
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -694,7 +831,11 @@ func (x *SignedContributionAndProof) String() string {
 func (*SignedContributionAndProof) ProtoMessage() {}
 
 func (x *SignedContributionAndProof) ProtoReflect() protoreflect.Message {
+<<<<<<< HEAD
 	mi := &file_proto_eth_v2_validator_proto_msgTypes[11]
+=======
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[13]
+>>>>>>> a59e27002b (WIP produce block)
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -707,7 +848,11 @@ func (x *SignedContributionAndProof) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SignedContributionAndProof.ProtoReflect.Descriptor instead.
 func (*SignedContributionAndProof) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{11}
+=======
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{13}
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func (x *SignedContributionAndProof) GetMessage() *ContributionAndProof {
@@ -736,7 +881,11 @@ type GetLivenessRequest struct {
 func (x *GetLivenessRequest) Reset() {
 	*x = GetLivenessRequest{}
 	if protoimpl.UnsafeEnabled {
+<<<<<<< HEAD
 		mi := &file_proto_eth_v2_validator_proto_msgTypes[12]
+=======
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[14]
+>>>>>>> a59e27002b (WIP produce block)
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -749,7 +898,11 @@ func (x *GetLivenessRequest) String() string {
 func (*GetLivenessRequest) ProtoMessage() {}
 
 func (x *GetLivenessRequest) ProtoReflect() protoreflect.Message {
+<<<<<<< HEAD
 	mi := &file_proto_eth_v2_validator_proto_msgTypes[12]
+=======
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[14]
+>>>>>>> a59e27002b (WIP produce block)
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -762,7 +915,11 @@ func (x *GetLivenessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLivenessRequest.ProtoReflect.Descriptor instead.
 func (*GetLivenessRequest) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{12}
+=======
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{14}
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func (x *GetLivenessRequest) GetEpoch() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.Epoch {
@@ -790,7 +947,11 @@ type GetLivenessResponse struct {
 func (x *GetLivenessResponse) Reset() {
 	*x = GetLivenessResponse{}
 	if protoimpl.UnsafeEnabled {
+<<<<<<< HEAD
 		mi := &file_proto_eth_v2_validator_proto_msgTypes[13]
+=======
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[15]
+>>>>>>> a59e27002b (WIP produce block)
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -803,7 +964,11 @@ func (x *GetLivenessResponse) String() string {
 func (*GetLivenessResponse) ProtoMessage() {}
 
 func (x *GetLivenessResponse) ProtoReflect() protoreflect.Message {
+<<<<<<< HEAD
 	mi := &file_proto_eth_v2_validator_proto_msgTypes[13]
+=======
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[15]
+>>>>>>> a59e27002b (WIP produce block)
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -816,7 +981,11 @@ func (x *GetLivenessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLivenessResponse.ProtoReflect.Descriptor instead.
 func (*GetLivenessResponse) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{13}
+=======
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{15}
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func (x *GetLivenessResponse) GetData() []*GetLivenessResponse_Liveness {
@@ -838,7 +1007,11 @@ type GetLivenessResponse_Liveness struct {
 func (x *GetLivenessResponse_Liveness) Reset() {
 	*x = GetLivenessResponse_Liveness{}
 	if protoimpl.UnsafeEnabled {
+<<<<<<< HEAD
 		mi := &file_proto_eth_v2_validator_proto_msgTypes[14]
+=======
+		mi := &file_proto_eth_v2_validator_proto_msgTypes[16]
+>>>>>>> a59e27002b (WIP produce block)
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -851,7 +1024,11 @@ func (x *GetLivenessResponse_Liveness) String() string {
 func (*GetLivenessResponse_Liveness) ProtoMessage() {}
 
 func (x *GetLivenessResponse_Liveness) ProtoReflect() protoreflect.Message {
+<<<<<<< HEAD
 	mi := &file_proto_eth_v2_validator_proto_msgTypes[14]
+=======
+	mi := &file_proto_eth_v2_validator_proto_msgTypes[16]
+>>>>>>> a59e27002b (WIP produce block)
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -864,7 +1041,11 @@ func (x *GetLivenessResponse_Liveness) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetLivenessResponse_Liveness.ProtoReflect.Descriptor instead.
 func (*GetLivenessResponse_Liveness) Descriptor() ([]byte, []int) {
+<<<<<<< HEAD
 	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{13, 0}
+=======
+	return file_proto_eth_v2_validator_proto_rawDescGZIP(), []int{15, 0}
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func (x *GetLivenessResponse_Liveness) GetIndex() github_com_prysmaticlabs_prysm_v4_consensus_types_primitives.ValidatorIndex {
@@ -939,7 +1120,23 @@ var file_proto_eth_v2_validator_proto_rawDesc = []byte{
 	0x12, 0x3b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27,
 	0x2e, 0x65, 0x74, 0x68, 0x65, 0x72, 0x65, 0x75, 0x6d, 0x2e, 0x65, 0x74, 0x68, 0x2e, 0x76, 0x32,
 	0x2e, 0x42, 0x65, 0x61, 0x63, 0x6f, 0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x43, 0x6f, 0x6e, 0x74,
-	0x61, 0x69, 0x6e, 0x65, 0x72, 0x56, 0x32, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x93, 0x01,
+	0x61, 0x69, 0x6e, 0x65, 0x72, 0x56, 0x32, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0xfd, 0x01,
+	0x0a, 0x16, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65,
+	0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x56, 0x33, 0x12, 0x32, 0x0a, 0x07, 0x76, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x18, 0x2e, 0x65, 0x74, 0x68, 0x65,
+	0x72, 0x65, 0x75, 0x6d, 0x2e, 0x65, 0x74, 0x68, 0x2e, 0x76, 0x32, 0x2e, 0x56, 0x65, 0x72, 0x73,
+	0x69, 0x6f, 0x6e, 0x52, 0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x3a, 0x0a, 0x19,
+	0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61,
+	0x64, 0x5f, 0x62, 0x6c, 0x69, 0x6e, 0x64, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52,
+	0x17, 0x65, 0x78, 0x65, 0x63, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61,
+	0x64, 0x42, 0x6c, 0x69, 0x6e, 0x64, 0x65, 0x64, 0x12, 0x36, 0x0a, 0x17, 0x65, 0x78, 0x65, 0x75,
+	0x63, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x5f, 0x76, 0x61,
+	0x6c, 0x75, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15, 0x65, 0x78, 0x65, 0x75, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x50, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x12, 0x3b, 0x0a, 0x04, 0x64, 0x61, 0x74, 0x61, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27,
+	0x2e, 0x65, 0x74, 0x68, 0x65, 0x72, 0x65, 0x75, 0x6d, 0x2e, 0x65, 0x74, 0x68, 0x2e, 0x76, 0x32,
+	0x2e, 0x42, 0x65, 0x61, 0x63, 0x6f, 0x6e, 0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x43, 0x6f, 0x6e, 0x74,
+	0x61, 0x69, 0x6e, 0x65, 0x72, 0x56, 0x33, 0x52, 0x04, 0x64, 0x61, 0x74, 0x61, 0x22, 0x93, 0x01,
 	0x0a, 0x1b, 0x50, 0x72, 0x6f, 0x64, 0x75, 0x63, 0x65, 0x42, 0x6c, 0x69, 0x6e, 0x64, 0x65, 0x64,
 	0x42, 0x6c, 0x6f, 0x63, 0x6b, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x32, 0x0a,
 	0x07, 0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x18,
@@ -1096,12 +1293,17 @@ func file_proto_eth_v2_validator_proto_rawDescGZIP() []byte {
 	return file_proto_eth_v2_validator_proto_rawDescData
 }
 
+<<<<<<< HEAD
 var file_proto_eth_v2_validator_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+=======
+var file_proto_eth_v2_validator_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+>>>>>>> a59e27002b (WIP produce block)
 var file_proto_eth_v2_validator_proto_goTypes = []interface{}{
 	(*SyncCommitteeDutiesRequest)(nil),               // 0: ethereum.eth.v2.SyncCommitteeDutiesRequest
 	(*SyncCommitteeDutiesResponse)(nil),              // 1: ethereum.eth.v2.SyncCommitteeDutiesResponse
 	(*SyncCommitteeDuty)(nil),                        // 2: ethereum.eth.v2.SyncCommitteeDuty
 	(*ProduceBlockResponseV2)(nil),                   // 3: ethereum.eth.v2.ProduceBlockResponseV2
+<<<<<<< HEAD
 	(*ProduceBlindedBlockResponse)(nil),              // 4: ethereum.eth.v2.ProduceBlindedBlockResponse
 	(*SubmitSyncCommitteeSubscriptionsRequest)(nil),  // 5: ethereum.eth.v2.SubmitSyncCommitteeSubscriptionsRequest
 	(*SyncCommitteeSubscription)(nil),                // 6: ethereum.eth.v2.SyncCommitteeSubscription
@@ -1133,6 +1335,45 @@ var file_proto_eth_v2_validator_proto_depIdxs = []int32{
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
+=======
+	(*ProduceBlockResponseV3)(nil),                   // 4: ethereum.eth.v2.ProduceBlockResponseV3
+	(*ProduceBlindedBlockResponse)(nil),              // 5: ethereum.eth.v2.ProduceBlindedBlockResponse
+	(*SubmitSyncCommitteeSubscriptionsRequest)(nil),  // 6: ethereum.eth.v2.SubmitSyncCommitteeSubscriptionsRequest
+	(*SyncCommitteeSubscription)(nil),                // 7: ethereum.eth.v2.SyncCommitteeSubscription
+	(*ProduceSyncCommitteeContributionRequest)(nil),  // 8: ethereum.eth.v2.ProduceSyncCommitteeContributionRequest
+	(*ProduceSyncCommitteeContributionResponse)(nil), // 9: ethereum.eth.v2.ProduceSyncCommitteeContributionResponse
+	(*SyncCommitteeContribution)(nil),                // 10: ethereum.eth.v2.SyncCommitteeContribution
+	(*SubmitContributionAndProofsRequest)(nil),       // 11: ethereum.eth.v2.SubmitContributionAndProofsRequest
+	(*ContributionAndProof)(nil),                     // 12: ethereum.eth.v2.ContributionAndProof
+	(*SignedContributionAndProof)(nil),               // 13: ethereum.eth.v2.SignedContributionAndProof
+	(*GetLivenessRequest)(nil),                       // 14: ethereum.eth.v2.GetLivenessRequest
+	(*GetLivenessResponse)(nil),                      // 15: ethereum.eth.v2.GetLivenessResponse
+	(*GetLivenessResponse_Liveness)(nil),             // 16: ethereum.eth.v2.GetLivenessResponse.Liveness
+	(Version)(0),                                     // 17: ethereum.eth.v2.Version
+	(*BeaconBlockContainerV2)(nil),                   // 18: ethereum.eth.v2.BeaconBlockContainerV2
+	(*BeaconBlockContainerV3)(nil),                   // 19: ethereum.eth.v2.BeaconBlockContainerV3
+	(*BlindedBeaconBlockContainer)(nil),              // 20: ethereum.eth.v2.BlindedBeaconBlockContainer
+}
+var file_proto_eth_v2_validator_proto_depIdxs = []int32{
+	2,  // 0: ethereum.eth.v2.SyncCommitteeDutiesResponse.data:type_name -> ethereum.eth.v2.SyncCommitteeDuty
+	17, // 1: ethereum.eth.v2.ProduceBlockResponseV2.version:type_name -> ethereum.eth.v2.Version
+	18, // 2: ethereum.eth.v2.ProduceBlockResponseV2.data:type_name -> ethereum.eth.v2.BeaconBlockContainerV2
+	17, // 3: ethereum.eth.v2.ProduceBlockResponseV3.version:type_name -> ethereum.eth.v2.Version
+	19, // 4: ethereum.eth.v2.ProduceBlockResponseV3.data:type_name -> ethereum.eth.v2.BeaconBlockContainerV3
+	17, // 5: ethereum.eth.v2.ProduceBlindedBlockResponse.version:type_name -> ethereum.eth.v2.Version
+	20, // 6: ethereum.eth.v2.ProduceBlindedBlockResponse.data:type_name -> ethereum.eth.v2.BlindedBeaconBlockContainer
+	7,  // 7: ethereum.eth.v2.SubmitSyncCommitteeSubscriptionsRequest.data:type_name -> ethereum.eth.v2.SyncCommitteeSubscription
+	10, // 8: ethereum.eth.v2.ProduceSyncCommitteeContributionResponse.data:type_name -> ethereum.eth.v2.SyncCommitteeContribution
+	13, // 9: ethereum.eth.v2.SubmitContributionAndProofsRequest.data:type_name -> ethereum.eth.v2.SignedContributionAndProof
+	10, // 10: ethereum.eth.v2.ContributionAndProof.contribution:type_name -> ethereum.eth.v2.SyncCommitteeContribution
+	12, // 11: ethereum.eth.v2.SignedContributionAndProof.message:type_name -> ethereum.eth.v2.ContributionAndProof
+	16, // 12: ethereum.eth.v2.GetLivenessResponse.data:type_name -> ethereum.eth.v2.GetLivenessResponse.Liveness
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
+>>>>>>> a59e27002b (WIP produce block)
 }
 
 func init() { file_proto_eth_v2_validator_proto_init() }
@@ -1192,7 +1433,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProduceBlindedBlockResponse); i {
+			switch v := v.(*ProduceBlockResponseV3); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1204,7 +1445,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SubmitSyncCommitteeSubscriptionsRequest); i {
+			switch v := v.(*ProduceBlindedBlockResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1216,7 +1457,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncCommitteeSubscription); i {
+			switch v := v.(*SubmitSyncCommitteeSubscriptionsRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1228,7 +1469,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProduceSyncCommitteeContributionRequest); i {
+			switch v := v.(*SyncCommitteeSubscription); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1240,7 +1481,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ProduceSyncCommitteeContributionResponse); i {
+			switch v := v.(*ProduceSyncCommitteeContributionRequest); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1252,7 +1493,7 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SyncCommitteeContribution); i {
+			switch v := v.(*ProduceSyncCommitteeContributionResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1264,7 +1505,10 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+<<<<<<< HEAD
 			switch v := v.(*ContributionAndProof); i {
+=======
+			switch v := v.(*SyncCommitteeContribution); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1276,7 +1520,8 @@ func file_proto_eth_v2_validator_proto_init() {
 			}
 		}
 		file_proto_eth_v2_validator_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SignedContributionAndProof); i {
+			switch v := v.(*SubmitContributionAndProofsRequest); i {
+>>>>>>> a59e27002b (WIP produce block)
 			case 0:
 				return &v.state
 			case 1:
@@ -1287,8 +1532,30 @@ func file_proto_eth_v2_validator_proto_init() {
 				return nil
 			}
 		}
+<<<<<<< HEAD
+		file_proto_eth_v2_validator_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SignedContributionAndProof); i {
+=======
+		file_proto_eth_v2_validator_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ContributionAndProof); i {
+>>>>>>> a59e27002b (WIP produce block)
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+<<<<<<< HEAD
 		file_proto_eth_v2_validator_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetLivenessRequest); i {
+=======
+		file_proto_eth_v2_validator_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SignedContributionAndProof); i {
+>>>>>>> a59e27002b (WIP produce block)
 			case 0:
 				return &v.state
 			case 1:
@@ -1299,7 +1566,27 @@ func file_proto_eth_v2_validator_proto_init() {
 				return nil
 			}
 		}
+<<<<<<< HEAD
 		file_proto_eth_v2_validator_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetLivenessResponse); i {
+=======
+		file_proto_eth_v2_validator_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*GetLivenessRequest); i {
+>>>>>>> a59e27002b (WIP produce block)
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+<<<<<<< HEAD
+		file_proto_eth_v2_validator_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+=======
+		file_proto_eth_v2_validator_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GetLivenessResponse); i {
 			case 0:
 				return &v.state
@@ -1311,7 +1598,8 @@ func file_proto_eth_v2_validator_proto_init() {
 				return nil
 			}
 		}
-		file_proto_eth_v2_validator_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_proto_eth_v2_validator_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+>>>>>>> a59e27002b (WIP produce block)
 			switch v := v.(*GetLivenessResponse_Liveness); i {
 			case 0:
 				return &v.state
@@ -1330,7 +1618,11 @@ func file_proto_eth_v2_validator_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_eth_v2_validator_proto_rawDesc,
 			NumEnums:      0,
+<<<<<<< HEAD
 			NumMessages:   15,
+=======
+			NumMessages:   17,
+>>>>>>> a59e27002b (WIP produce block)
 			NumExtensions: 0,
 			NumServices:   0,
 		},
