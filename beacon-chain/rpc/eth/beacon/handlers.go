@@ -15,6 +15,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/api"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/helpers"
+	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
@@ -706,13 +707,8 @@ func (bs *Server) validateBroadcast(r *http.Request, blk *eth.GenericSignedBeaco
 }
 
 func (bs *Server) validateConsensus(ctx context.Context, blk interfaces.ReadOnlySignedBeaconBlock) error {
-	parentBlockRoot := blk.Block().ParentRoot()
-	parentBlock, err := bs.Blocker.Block(ctx, parentBlockRoot[:])
-	if err != nil {
-		return errors.Wrap(err, "could not get parent block")
-	}
-	parentStateRoot := parentBlock.Block().StateRoot()
-	parentState, err := bs.Stater.State(ctx, parentStateRoot[:])
+	parentRoot := blk.Block().ParentRoot()
+	parentState, err := bs.Stater.State(ctx, parentRoot[:])
 	if err != nil {
 		return errors.Wrap(err, "could not get parent state")
 	}
@@ -806,22 +802,26 @@ func ProduceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request) {
 		}
 		randaoReveal = rr
 	}
-	if len(randaoReveal) == 0 {
+	if len(randaoReveal) != fieldparams.BLSPubkeyLength {
 		errJson := &http2.DefaultErrorJson{
-			Message: "randao reveal is required as query parameters",
+			Message: fmt.Sprintf("a valid randao reveal is required as a query parameter: %s", randaoReveal),
 			Code:    http.StatusBadRequest,
 		}
 		http2.WriteError(w, errJson)
 		return
 	}
-	graffiti, err := hexutil.Decode(rawGraffiti)
-	if err != nil {
-		errJson := &http2.DefaultErrorJson{
-			Message: errors.Wrap(err, "unable to decode graffiti").Error(),
-			Code:    http.StatusBadRequest,
+	var graffiti []byte
+	if rawGraffiti != "" {
+		g, err := hexutil.Decode(rawGraffiti)
+		if err != nil {
+			errJson := &http2.DefaultErrorJson{
+				Message: errors.Wrap(err, "unable to decode graffiti").Error(),
+				Code:    http.StatusBadRequest,
+			}
+			http2.WriteError(w, errJson)
+			return
 		}
-		http2.WriteError(w, errJson)
-		return
+		graffiti = g
 	}
 
 	produceBlockV3(bs, w, r, &eth.BlockRequest{
@@ -879,7 +879,7 @@ func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1
 			http2.WriteJson(w, &Phase0ProduceBlockV3Response{
 				Version:                 version.String(version.Phase0),
 				ExecutionPayloadBlinded: false,
-				ExeuctionPayloadValue:   "0", // mev not available at this point
+				ExeuctionPayloadValue:   fmt.Sprintf("%d", v1alpha1resp.PayloadValue), // mev not available at this point
 				Data:                    block,
 			})
 			return
@@ -1038,10 +1038,10 @@ func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1
 			return
 		}
 		if err = validate.Struct(block); err == nil {
-			http2.WriteJson(w, &BlindedBellatrixProduceBlockV3Response{
-				Version:                 version.String(version.Bellatrix),
+			http2.WriteJson(w, &BlindedCapellaProduceBlockV3Response{
+				Version:                 version.String(version.Capella),
 				ExecutionPayloadBlinded: true,
-				ExeuctionPayloadValue:   "0", // mev not available at this point
+				ExeuctionPayloadValue:   fmt.Sprintf("%d", v1alpha1resp.PayloadValue), // mev not available at this point
 				Data:                    block,
 			})
 			return
@@ -1049,37 +1049,110 @@ func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Capella)
 	if ok {
-		block, err := migration.V1Alpha1BeaconBlockCapellaToV2(capellaBlock.Capella)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "Could not prepare beacon block: %v", err)
+		w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", v1alpha1resp.IsBlinded))
+		w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", v1alpha1resp.PayloadValue))
+		if isSSZ {
+			sszResp, err := capellaBlock.Capella.MarshalSSZ()
+			if err != nil {
+				errJson := &http2.DefaultErrorJson{
+					Message: err.Error(),
+					Code:    http.StatusInternalServerError,
+				}
+				http2.WriteError(w, errJson)
+				return
+			}
+			http2.WriteSsz(w, sszResp, "capellaBlock.ssz")
+			return
 		}
-		return &ethpbv2.ProduceBlockResponseV2{
-			Version: ethpbv2.Version_CAPELLA,
-			Data: &ethpbv2.BeaconBlockContainerV2{
-				Block: &ethpbv2.BeaconBlockContainerV2_CapellaBlock{CapellaBlock: block},
-			},
-		}, nil
+		block, err := convertInternalBeaconBlockCapella(capellaBlock.Capella)
+		if err != nil {
+			errJson := &http2.DefaultErrorJson{
+				Message: err.Error(),
+				Code:    http.StatusInternalServerError,
+			}
+			http2.WriteError(w, errJson)
+			return
+		}
+		if err = validate.Struct(block); err == nil {
+			http2.WriteJson(w, &CapellaProduceBlockV3Response{
+				Version:                 version.String(version.Capella),
+				ExecutionPayloadBlinded: false,
+				ExeuctionPayloadValue:   fmt.Sprintf("%d", v1alpha1resp.PayloadValue), // mev not available at this point
+				Data:                    block,
+			})
+			return
+		}
 	}
-	//_, ok = v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_BlindedDeneb)
-	//if ok {
-	//	return nil, status.Error(codes.Internal, "Prepared Deneb beacon block contents are blinded")
-	//}
-	//denebBlock, ok := v1alpha1resp.Block.(*ethpbalpha.GenericBeaconBlock_Deneb)
-	//if ok {
-	//	blockAndBlobs, err := migration.V1Alpha1BeaconBlockDenebAndBlobsToV2(denebBlock.Deneb)
-	//	if err != nil {
-	//		return nil, status.Errorf(codes.Internal, "Could not prepare beacon block contents: %v", err)
-	//	}
-	//	return &ethpbv2.ProduceBlockResponseV2{
-	//		Version: ethpbv2.Version_DENEB,
-	//		Data: &ethpbv2.BeaconBlockContainerV2{
-	//			Block: &ethpbv2.BeaconBlockContainerV2_DenebContents{
-	//				DenebContents: &ethpbv2.BeaconBlockContentsDeneb{
-	//					Block:        blockAndBlobs.Block,
-	//					BlobSidecars: blockAndBlobs.BlobSidecars,
-	//				}},
-	//		},
-	//	}, nil
-	//}
-
+	blindedDenebBlockContents, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_BlindedDeneb)
+	if ok {
+		w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", v1alpha1resp.IsBlinded))
+		w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", v1alpha1resp.PayloadValue))
+		if isSSZ {
+			sszResp, err := blindedDenebBlockContents.BlindedDeneb.MarshalSSZ()
+			if err != nil {
+				errJson := &http2.DefaultErrorJson{
+					Message: err.Error(),
+					Code:    http.StatusInternalServerError,
+				}
+				http2.WriteError(w, errJson)
+				return
+			}
+			http2.WriteSsz(w, sszResp, "blindedDenebBlockContents.ssz")
+			return
+		}
+		blockContents, err := convertInternalBlindedBeaconBlockContentsDeneb(blindedDenebBlockContents.BlindedDeneb)
+		if err != nil {
+			errJson := &http2.DefaultErrorJson{
+				Message: err.Error(),
+				Code:    http.StatusInternalServerError,
+			}
+			http2.WriteError(w, errJson)
+			return
+		}
+		if err = validate.Struct(blockContents); err == nil {
+			http2.WriteJson(w, &BlindedDenebProduceBlockV3Response{
+				Version:                 version.String(version.Deneb),
+				ExecutionPayloadBlinded: true,
+				ExeuctionPayloadValue:   fmt.Sprintf("%d", v1alpha1resp.PayloadValue), // mev not available at this point
+				Data:                    blockContents,
+			})
+			return
+		}
+	}
+	denebBlockContents, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Deneb)
+	if ok {
+		w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", v1alpha1resp.IsBlinded))
+		w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", v1alpha1resp.PayloadValue))
+		if isSSZ {
+			sszResp, err := denebBlockContents.Deneb.MarshalSSZ()
+			if err != nil {
+				errJson := &http2.DefaultErrorJson{
+					Message: err.Error(),
+					Code:    http.StatusInternalServerError,
+				}
+				http2.WriteError(w, errJson)
+				return
+			}
+			http2.WriteSsz(w, sszResp, "denebBlockContents.ssz")
+			return
+		}
+		blockContents, err := convertInternalBeaconBlockContentsDeneb(denebBlockContents.Deneb)
+		if err != nil {
+			errJson := &http2.DefaultErrorJson{
+				Message: err.Error(),
+				Code:    http.StatusInternalServerError,
+			}
+			http2.WriteError(w, errJson)
+			return
+		}
+		if err = validate.Struct(blockContents); err == nil {
+			http2.WriteJson(w, &DenebProduceBlockV3Response{
+				Version:                 version.String(version.Deneb),
+				ExecutionPayloadBlinded: true,
+				ExeuctionPayloadValue:   fmt.Sprintf("%d", v1alpha1resp.PayloadValue), // mev not available at this point
+				Data:                    blockContents,
+			})
+			return
+		}
+	}
 }
