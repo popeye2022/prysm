@@ -41,7 +41,13 @@ func TestPublishBlockV2(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+			converted, err := convertInternalBeaconBlock(block.Phase0.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlock
+			err = json.Unmarshal([]byte(phase0Block), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -58,7 +64,13 @@ func TestPublishBlockV2(t *testing.T) {
 	t.Run("Altair", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+			converted, err := convertInternalBeaconBlockAltair(block.Altair.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlockAltair
+			err = json.Unmarshal([]byte(altairBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -75,7 +87,13 @@ func TestPublishBlockV2(t *testing.T) {
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
+			converted, err := convertInternalBeaconBlockBellatrix(block.Bellatrix.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlockBellatrix
+			err = json.Unmarshal([]byte(bellatrixBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -92,7 +110,13 @@ func TestPublishBlockV2(t *testing.T) {
 	t.Run("Capella", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Capella)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Capella)
+			converted, err := convertInternalBeaconBlockCapella(block.Capella.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlockCapella
+			err = json.Unmarshal([]byte(capellaBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -109,7 +133,13 @@ func TestPublishBlockV2(t *testing.T) {
 	t.Run("Deneb", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Deneb)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Deneb)
+			converted, err := convertInternalToDenebBlock(block.Deneb.Block.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlockContentsDeneb
+			err = json.Unmarshal([]byte(denebBlockContents), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.SignedBlock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -293,7 +323,7 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 		server.PublishBlindedBlockV2(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
 	})
-	t.Run("Bellatrix", func(t *testing.T) {
+	t.Run("Blinded Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
 			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedBellatrix)
@@ -316,7 +346,7 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 		server.PublishBlindedBlockV2(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
 	})
-	t.Run("Capella", func(t *testing.T) {
+	t.Run("Blinded Capella", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
 			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedCapella)
@@ -339,7 +369,7 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 		server.PublishBlindedBlockV2(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
 	})
-	t.Run("Deneb", func(t *testing.T) {
+	t.Run("Blinded Deneb", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
 			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedDeneb)
@@ -1355,7 +1385,7 @@ const (
         "gas_used": "1",
         "timestamp": "1",
         "extra_data": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-        "base_fee_per_gas": "1",
+        "base_fee_per_gas": "14074904626401341155369551180448584754667373453244490859944217516317499064576",
         "block_hash": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
         "transactions": [
           "0x02f878831469668303f51d843b9ac9f9843b9aca0082520894c93269b73096998db66be0441e836d873535cb9c8894a19041886f000080c001a031cc29234036afbf9a1fb9476b463367cb1f957ac0b919b69bbc798436e604aaa018c4e9c3914eb27aadd0b91e10b18655739fcf8c1fc398763a9f1beecb8ddc86"
@@ -1711,7 +1741,7 @@ const (
         "gas_used": "1",
         "timestamp": "1",
         "extra_data": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-        "base_fee_per_gas": "1",
+        "base_fee_per_gas": "14074904626401341155369551180448584754667373453244490859944217516317499064576",
         "block_hash": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
         "transactions": [
           "0x02f878831469668303f51d843b9ac9f9843b9aca0082520894c93269b73096998db66be0441e836d873535cb9c8894a19041886f000080c001a031cc29234036afbf9a1fb9476b463367cb1f957ac0b919b69bbc798436e604aaa018c4e9c3914eb27aadd0b91e10b18655739fcf8c1fc398763a9f1beecb8ddc86"
@@ -1908,7 +1938,7 @@ const (
         "gas_used": "1",
         "timestamp": "1",
         "extra_data": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-        "base_fee_per_gas": "1",
+        "base_fee_per_gas": "14074904626401341155369551180448584754667373453244490859944217516317499064576",
         "block_hash": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
         "transactions_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
         "withdrawals_root": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
@@ -2097,7 +2127,7 @@ const (
         "gas_used": "1",
         "timestamp": "1",
         "extra_data": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-        "base_fee_per_gas": "1",
+        "base_fee_per_gas": "14074904626401341155369551180448584754667373453244490859944217516317499064576",
         "block_hash": "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
 		"blob_gas_used": "1",
 		"excess_blob_gas": "2",
@@ -2218,7 +2248,7 @@ var denebBlockContents = `{
 			  ],
 			  "attestations": [
 				{
-				  "aggregation_bits": "Oxffffffffffffffffffffffffffffffffff3f",
+				  "aggregation_bits": "0x01",
 				  "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
 				  "data": {
 					"slot": "1",
@@ -2290,7 +2320,7 @@ var denebBlockContents = `{
 				}
 			  ],
 			  "sync_aggregate": {
-				"sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
+				"sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 				"sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
 			  },
 			  "execution_payload": {

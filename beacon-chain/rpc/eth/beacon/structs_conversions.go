@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/primitives"
 	bytesutil2 "github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
+	"github.com/prysmaticlabs/prysm/v4/math"
 	enginev1 "github.com/prysmaticlabs/prysm/v4/proto/engine/v1"
 	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/wealdtech/go-bytesutil"
@@ -396,7 +397,7 @@ func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock,
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayload.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(b.Message.Body.ExecutionPayload.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(b.Message.Body.ExecutionPayload.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayload.BaseFeePerGas")
 	}
@@ -571,7 +572,7 @@ func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaco
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas")
 	}
@@ -743,7 +744,7 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayload.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(b.Message.Body.ExecutionPayload.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(b.Message.Body.ExecutionPayload.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayload.BaseFeePerGas")
 	}
@@ -949,7 +950,7 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.ExecutionPayloadHeader.BaseFeePerGas")
 	}
@@ -1211,7 +1212,10 @@ func convertInternalBlindedBeaconBlockBellatrix(b *eth.BlindedBeaconBlockBellatr
 	if err != nil {
 		return nil, err
 	}
-
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	if err != nil {
+		return nil, err
+	}
 	return &BlindedBeaconBlockBellatrix{
 		Slot:          fmt.Sprintf("%d", b.Slot),
 		ProposerIndex: fmt.Sprintf("%d", b.ProposerIndex),
@@ -1246,7 +1250,7 @@ func convertInternalBlindedBeaconBlockBellatrix(b *eth.BlindedBeaconBlockBellatr
 				GasUsed:          fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.GasUsed),
 				Timestamp:        fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.Timestamp),
 				ExtraData:        hexutil.Encode(b.Body.ExecutionPayloadHeader.ExtraData),
-				BaseFeePerGas:    hexutil.Encode(b.Body.ExecutionPayloadHeader.BaseFeePerGas),
+				BaseFeePerGas:    baseFeePerGas,
 				BlockHash:        hexutil.Encode(b.Body.ExecutionPayloadHeader.BlockHash),
 				TransactionsRoot: hexutil.Encode(b.Body.ExecutionPayloadHeader.TransactionsRoot),
 			},
@@ -1275,6 +1279,10 @@ func convertInternalBeaconBlockBellatrix(b *eth.BeaconBlockBellatrix) (*BeaconBl
 		return nil, err
 	}
 	exits, err := convertInternalExits(b.Body.VoluntaryExits)
+	if err != nil {
+		return nil, err
+	}
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayload.BaseFeePerGas)
 	if err != nil {
 		return nil, err
 	}
@@ -1316,7 +1324,7 @@ func convertInternalBeaconBlockBellatrix(b *eth.BeaconBlockBellatrix) (*BeaconBl
 				GasUsed:       fmt.Sprintf("%d", b.Body.ExecutionPayload.GasUsed),
 				Timestamp:     fmt.Sprintf("%d", b.Body.ExecutionPayload.Timestamp),
 				ExtraData:     hexutil.Encode(b.Body.ExecutionPayload.ExtraData),
-				BaseFeePerGas: hexutil.Encode(b.Body.ExecutionPayload.BaseFeePerGas),
+				BaseFeePerGas: baseFeePerGas,
 				BlockHash:     hexutil.Encode(b.Body.ExecutionPayload.BlockHash),
 				Transactions:  transactions,
 			},
@@ -1348,7 +1356,10 @@ func convertInternalBlindedBeaconBlockCapella(b *eth.BlindedBeaconBlockCapella) 
 	if err != nil {
 		return nil, err
 	}
-
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	if err != nil {
+		return nil, err
+	}
 	blsChanges, err := convertInternalBlsChanges(b.Body.BlsToExecutionChanges)
 	if err != nil {
 		return nil, err
@@ -1388,7 +1399,7 @@ func convertInternalBlindedBeaconBlockCapella(b *eth.BlindedBeaconBlockCapella) 
 				GasUsed:          fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.GasUsed),
 				Timestamp:        fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.Timestamp),
 				ExtraData:        hexutil.Encode(b.Body.ExecutionPayloadHeader.ExtraData),
-				BaseFeePerGas:    hexutil.Encode(b.Body.ExecutionPayloadHeader.BaseFeePerGas),
+				BaseFeePerGas:    baseFeePerGas,
 				BlockHash:        hexutil.Encode(b.Body.ExecutionPayloadHeader.BlockHash),
 				TransactionsRoot: hexutil.Encode(b.Body.ExecutionPayloadHeader.TransactionsRoot),
 				WithdrawalsRoot:  hexutil.Encode(b.Body.ExecutionPayloadHeader.WithdrawalsRoot), // new in capella
@@ -1419,6 +1430,10 @@ func convertInternalBeaconBlockCapella(b *eth.BeaconBlockCapella) (*BeaconBlockC
 		return nil, err
 	}
 	exits, err := convertInternalExits(b.Body.VoluntaryExits)
+	if err != nil {
+		return nil, err
+	}
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayload.BaseFeePerGas)
 	if err != nil {
 		return nil, err
 	}
@@ -1473,7 +1488,7 @@ func convertInternalBeaconBlockCapella(b *eth.BeaconBlockCapella) (*BeaconBlockC
 				GasUsed:       fmt.Sprintf("%d", b.Body.ExecutionPayload.GasUsed),
 				Timestamp:     fmt.Sprintf("%d", b.Body.ExecutionPayload.Timestamp),
 				ExtraData:     hexutil.Encode(b.Body.ExecutionPayload.ExtraData),
-				BaseFeePerGas: hexutil.Encode(b.Body.ExecutionPayload.BaseFeePerGas),
+				BaseFeePerGas: baseFeePerGas,
 				BlockHash:     hexutil.Encode(b.Body.ExecutionPayload.BlockHash),
 				Transactions:  transactions,
 				Withdrawals:   withdrawals, // new in capella
@@ -1646,7 +1661,7 @@ func convertToSignedDenebBlock(signedBlock *SignedBeaconBlockDeneb) (*eth.Signed
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlock.Message.Body.ExecutionPayload.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(signedBlock.Message.Body.ExecutionPayload.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(signedBlock.Message.Body.ExecutionPayload.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlock.Message.Body.ExecutionPayload.BaseFeePerGas")
 	}
@@ -1686,10 +1701,7 @@ func convertToSignedDenebBlock(signedBlock *SignedBeaconBlockDeneb) (*eth.Signed
 			Amount:         amount,
 		}
 	}
-	blsChanges, err := convertBlsChanges(signedBlock.Message.Body.BlsToExecutionChanges)
-	if err != nil {
-		return nil, err
-	}
+
 	payloadBlobGasUsed, err := strconv.ParseUint(signedBlock.Message.Body.ExecutionPayload.BlobGasUsed, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlock.Message.Body.ExecutionPayload.BlobGasUsed")
@@ -1697,6 +1709,18 @@ func convertToSignedDenebBlock(signedBlock *SignedBeaconBlockDeneb) (*eth.Signed
 	payloadExcessBlobGas, err := strconv.ParseUint(signedBlock.Message.Body.ExecutionPayload.ExcessBlobGas, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlock.Message.Body.ExecutionPayload.ExcessBlobGas")
+	}
+	blsChanges, err := convertBlsChanges(signedBlock.Message.Body.BlsToExecutionChanges)
+	if err != nil {
+		return nil, err
+	}
+	blobKzgCommitments := make([][]byte, len(signedBlock.Message.Body.BlobKzgCommitments))
+	for i, b := range signedBlock.Message.Body.BlobKzgCommitments {
+		kzg, err := hexutil.Decode(b)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("blob kzg commitment at index %d failed to decode", i))
+		}
+		blobKzgCommitments[i] = kzg
 	}
 	return &eth.SignedBeaconBlockDeneb{
 		Block: &eth.BeaconBlockDeneb{
@@ -1741,6 +1765,7 @@ func convertToSignedDenebBlock(signedBlock *SignedBeaconBlockDeneb) (*eth.Signed
 					ExcessBlobGas: payloadExcessBlobGas,
 				},
 				BlsToExecutionChanges: blsChanges,
+				BlobKzgCommitments:    blobKzgCommitments,
 			},
 		},
 		Signature: sig,
@@ -1942,7 +1967,7 @@ func convertToSignedBlindedDenebBlock(signedBlindedBlock *SignedBlindedBeaconBlo
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.ExecutionPayloadHeader.ExtraData")
 	}
-	payloadBaseFeePerGas, err := uint256ToHex(signedBlindedBlock.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	payloadBaseFeePerGas, err := uint256ToSSZBytes(signedBlindedBlock.Message.Body.ExecutionPayloadHeader.BaseFeePerGas)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.ExecutionPayloadHeader.BaseFeePerGas")
 	}
@@ -1958,10 +1983,7 @@ func convertToSignedBlindedDenebBlock(signedBlindedBlock *SignedBlindedBeaconBlo
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.ExecutionPayloadHeader.WithdrawalsRoot")
 	}
-	blsChanges, err := convertBlsChanges(signedBlindedBlock.Message.Body.BlsToExecutionChanges)
-	if err != nil {
-		return nil, err
-	}
+
 	payloadBlobGasUsed, err := strconv.ParseUint(signedBlindedBlock.Message.Body.ExecutionPayloadHeader.BlobGasUsed, 10, 64)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.ExecutionPayload.BlobGasUsed")
@@ -1970,6 +1992,21 @@ func convertToSignedBlindedDenebBlock(signedBlindedBlock *SignedBlindedBeaconBlo
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.ExecutionPayload.ExcessBlobGas")
 	}
+
+	blsChanges, err := convertBlsChanges(signedBlindedBlock.Message.Body.BlsToExecutionChanges)
+	if err != nil {
+		return nil, err
+	}
+
+	blobKzgCommitments := make([][]byte, len(signedBlindedBlock.Message.Body.BlobKzgCommitments))
+	for i, b := range signedBlindedBlock.Message.Body.BlobKzgCommitments {
+		kzg, err := hexutil.Decode(b)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf("blob kzg commitment at index %d failed to decode", i))
+		}
+		blobKzgCommitments[i] = kzg
+	}
+
 	return &eth.SignedBlindedBeaconBlockDeneb{
 		Block: &eth.BlindedBeaconBlockDeneb{
 			Slot:          primitives.Slot(slot),
@@ -2013,6 +2050,7 @@ func convertToSignedBlindedDenebBlock(signedBlindedBlock *SignedBlindedBeaconBlo
 					ExcessBlobGas:    payloadExcessBlobGas,
 				},
 				BlsToExecutionChanges: blsChanges,
+				BlobKzgCommitments:    blobKzgCommitments,
 			},
 		},
 		Signature: sig,
@@ -2043,7 +2081,10 @@ func convertInternalToBlindedDenebBlock(b *eth.BlindedBeaconBlockDeneb) (*Blinde
 	if err != nil {
 		return nil, err
 	}
-
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayloadHeader.BaseFeePerGas)
+	if err != nil {
+		return nil, err
+	}
 	blsChanges, err := convertInternalBlsChanges(b.Body.BlsToExecutionChanges)
 	if err != nil {
 		return nil, err
@@ -2088,15 +2129,15 @@ func convertInternalToBlindedDenebBlock(b *eth.BlindedBeaconBlockDeneb) (*Blinde
 				GasUsed:          fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.GasUsed),
 				Timestamp:        fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.Timestamp),
 				ExtraData:        hexutil.Encode(b.Body.ExecutionPayloadHeader.ExtraData),
-				BaseFeePerGas:    hexutil.Encode(b.Body.ExecutionPayloadHeader.BaseFeePerGas),
+				BaseFeePerGas:    baseFeePerGas,
 				BlockHash:        hexutil.Encode(b.Body.ExecutionPayloadHeader.BlockHash),
 				TransactionsRoot: hexutil.Encode(b.Body.ExecutionPayloadHeader.TransactionsRoot),
 				WithdrawalsRoot:  hexutil.Encode(b.Body.ExecutionPayloadHeader.WithdrawalsRoot),
-				DataGasUsed:      fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.DataGasUsed),   // new in deneb TODO: rename to blob
-				ExcessDataGas:    fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.ExcessDataGas), // new in deneb TODO: rename to blob
+				BlobGasUsed:      fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.BlobGasUsed),   // new in deneb TODO: rename to blob
+				ExcessBlobGas:    fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.ExcessBlobGas), // new in deneb TODO: rename to blob
 			},
-			BlsToExecutionChanges: blsChanges, // new in capella
-			BlobKzgCommitments:    blobKzgCommitments,
+			BlsToExecutionChanges: blsChanges,         // new in capella
+			BlobKzgCommitments:    blobKzgCommitments, // new in deneb
 		},
 	}, nil
 }
@@ -2125,6 +2166,10 @@ func convertInternalToDenebBlock(b *eth.BeaconBlockDeneb) (*BeaconBlockDeneb, er
 	if err != nil {
 		return nil, err
 	}
+	baseFeePerGas, err := sszBytesToUint256String(b.Body.ExecutionPayload.BaseFeePerGas)
+	if err != nil {
+		return nil, err
+	}
 	transactions := make([]string, len(b.Body.ExecutionPayload.Transactions))
 	for i, tx := range b.Body.ExecutionPayload.Transactions {
 		transactions[i] = hexutil.Encode(tx)
@@ -2141,6 +2186,10 @@ func convertInternalToDenebBlock(b *eth.BeaconBlockDeneb) (*BeaconBlockDeneb, er
 	blsChanges, err := convertInternalBlsChanges(b.Body.BlsToExecutionChanges)
 	if err != nil {
 		return nil, err
+	}
+	blobKzgCommitments := make([]string, len(b.Body.BlobKzgCommitments))
+	for i, b := range b.Body.BlobKzgCommitments {
+		blobKzgCommitments[i] = hexutil.Encode(b)
 	}
 
 	return &BeaconBlockDeneb{
@@ -2177,14 +2226,15 @@ func convertInternalToDenebBlock(b *eth.BeaconBlockDeneb) (*BeaconBlockDeneb, er
 				GasUsed:       fmt.Sprintf("%d", b.Body.ExecutionPayload.GasUsed),
 				Timestamp:     fmt.Sprintf("%d", b.Body.ExecutionPayload.Timestamp),
 				ExtraData:     hexutil.Encode(b.Body.ExecutionPayload.ExtraData),
-				BaseFeePerGas: hexutil.Encode(b.Body.ExecutionPayload.BaseFeePerGas),
+				BaseFeePerGas: baseFeePerGas,
 				BlockHash:     hexutil.Encode(b.Body.ExecutionPayload.BlockHash),
 				Transactions:  transactions,
 				Withdrawals:   withdrawals,
-				DataGasUsed:   fmt.Sprintf("%d", b.Body.ExecutionPayload.DataGasUsed),   // new in deneb TODO: rename to blob
-				ExcessDataGas: fmt.Sprintf("%d", b.Body.ExecutionPayload.ExcessDataGas), // new in deneb TODO: rename to blob
+				BlobGasUsed:   fmt.Sprintf("%d", b.Body.ExecutionPayload.BlobGasUsed),   // new in deneb TODO: rename to blob
+				ExcessBlobGas: fmt.Sprintf("%d", b.Body.ExecutionPayload.ExcessBlobGas), // new in deneb TODO: rename to blob
 			},
-			BlsToExecutionChanges: blsChanges, // new in capella
+			BlsToExecutionChanges: blsChanges,         // new in capella
+			BlobKzgCommitments:    blobKzgCommitments, // new in deneb
 		},
 	}, nil
 }
@@ -2823,14 +2873,21 @@ func convertInternalBlsChanges(src []*eth.SignedBLSToExecutionChange) ([]*Signed
 	return changes, nil
 }
 
-func uint256ToHex(num string) ([]byte, error) {
+func uint256ToSSZBytes(num string) ([]byte, error) {
 	uint256, ok := new(big.Int).SetString(num, 10)
 	if !ok {
 		return nil, errors.New("could not parse Uint256")
 	}
-	bigEndian := uint256.Bytes()
-	if len(bigEndian) > 32 {
-		return nil, errors.New("number too big for Uint256")
+	if !math.IsValidUint256(uint256) {
+		return nil, errors.New("is")
 	}
-	return bytesutil2.ReverseByteOrder(bytesutil2.PadTo(bigEndian, 32)), nil
+	return bytesutil2.PadTo(bytesutil2.ReverseByteOrder(uint256.Bytes()), 32), nil
+}
+
+func sszBytesToUint256String(b []byte) (string, error) {
+	bi := bytesutil2.LittleEndianBytesToBigInt(b)
+	if !math.IsValidUint256(bi) {
+		return "", fmt.Errorf("%s is not a valid uint356", bi.String())
+	}
+	return string([]byte(bi.String())), nil
 }
