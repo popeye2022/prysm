@@ -344,7 +344,7 @@ func (b *SignedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaconBlock,
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(b.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(b.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -519,7 +519,7 @@ func (b *SignedBlindedBeaconBlockBellatrix) ToGeneric() (*eth.GenericSignedBeaco
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(b.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(b.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -691,7 +691,7 @@ func (b *SignedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconBlock, e
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(b.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(b.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -897,7 +897,7 @@ func (b *SignedBlindedBeaconBlockCapella) ToGeneric() (*eth.GenericSignedBeaconB
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(b.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(b.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode b.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -1594,7 +1594,7 @@ func convertToSignedDenebBlock(signedBlock *SignedBeaconBlockDeneb) (*eth.Signed
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(signedBlock.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(signedBlock.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlock.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -1890,7 +1890,7 @@ func convertToSignedBlindedDenebBlock(signedBlindedBlock *SignedBlindedBeaconBlo
 	if err != nil {
 		return nil, err
 	}
-	syncCommitteeBits, err := bytesutil.FromHexString(signedBlindedBlock.Message.Body.SyncAggregate.SyncCommitteeBits)
+	syncCommitteeBits, err := hexutil.Decode(signedBlindedBlock.Message.Body.SyncAggregate.SyncCommitteeBits)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not decode signedBlindedBlock.Message.Body.SyncAggregate.SyncCommitteeBits")
 	}
@@ -2049,6 +2049,11 @@ func convertInternalToBlindedDenebBlock(b *eth.BlindedBeaconBlockDeneb) (*Blinde
 		return nil, err
 	}
 
+	blobKzgCommitments := make([]string, len(b.Body.BlobKzgCommitments))
+	for i, b := range b.Body.BlobKzgCommitments {
+		blobKzgCommitments[i] = hexutil.Encode(b)
+	}
+
 	return &BlindedBeaconBlockDeneb{
 		Slot:          fmt.Sprintf("%d", b.Slot),
 		ProposerIndex: fmt.Sprintf("%d", b.ProposerIndex),
@@ -2091,6 +2096,7 @@ func convertInternalToBlindedDenebBlock(b *eth.BlindedBeaconBlockDeneb) (*Blinde
 				ExcessDataGas:    fmt.Sprintf("%d", b.Body.ExecutionPayloadHeader.ExcessDataGas), // new in deneb TODO: rename to blob
 			},
 			BlsToExecutionChanges: blsChanges, // new in capella
+			BlobKzgCommitments:    blobKzgCommitments,
 		},
 	}, nil
 }
@@ -2601,8 +2607,12 @@ func convertAtts(src []*Attestation) ([]*eth.Attestation, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not decode b.Message.Body.Attestations[%d].Data.Target.Root", i)
 		}
+		aggregateBits, err := hexutil.Decode(a.AggregationBits)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not decode b.Message.Body.Attestations[%d].AggregationBits", i)
+		}
 		atts[i] = &eth.Attestation{
-			AggregationBits: []byte(a.AggregationBits),
+			AggregationBits: aggregateBits,
 			Data: &eth.AttestationData{
 				Slot:            primitives.Slot(slot),
 				CommitteeIndex:  primitives.CommitteeIndex(committeeIndex),
@@ -2629,7 +2639,7 @@ func convertInternalAtts(src []*eth.Attestation) ([]*Attestation, error) {
 	atts := make([]*Attestation, len(src))
 	for i, a := range src {
 		atts[i] = &Attestation{
-			AggregationBits: string(a.AggregationBits),
+			AggregationBits: hexutil.Encode(a.AggregationBits),
 			Data: &AttestationData{
 				Slot:            fmt.Sprintf("%d", a.Data.Slot),
 				Index:           fmt.Sprintf("%d", a.Data.CommitteeIndex),

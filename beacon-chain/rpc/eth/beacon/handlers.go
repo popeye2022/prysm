@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/go-playground/validator/v10"
@@ -760,12 +761,12 @@ func (bs *Server) checkSync(ctx context.Context, w http.ResponseWriter) bool {
 // header from an MEV relay.
 // Metadata in the response indicates the type of block produced, and the supported types of block
 // will be added to as forks progress.
-func ProduceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request) {
+func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 	if ok := bs.checkSync(r.Context(), w); !ok {
 		return
 	}
-
-	rawSlot := r.URL.Query().Get("slot")
+	segments := strings.Split(r.URL.Path, "/")
+	rawSlot := segments[len(segments)-1]
 	rawRandaoReveal := r.URL.Query().Get("randao_reveal")
 	rawGraffiti := r.URL.Query().Get("graffiti")
 	rawSkipRandaoVerification := r.URL.Query().Get("skip_randao_verification")

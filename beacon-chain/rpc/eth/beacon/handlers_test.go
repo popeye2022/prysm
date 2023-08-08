@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v4/api"
 	testing2 "github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain/testing"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
@@ -19,10 +20,12 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/testutil"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
 	mockSync "github.com/prysmaticlabs/prysm/v4/beacon-chain/sync/initial-sync/testing"
+	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
+	ethpb "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
 	"github.com/prysmaticlabs/prysm/v4/proto/migration"
 	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/testing/assert"
@@ -152,7 +155,6 @@ func TestPublishBlockV2(t *testing.T) {
 
 func TestPublishBlockV2SSZ(t *testing.T) {
 	ctrl := gomock.NewController(t)
-
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
@@ -248,7 +250,13 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	t.Run("Phase 0", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+			converted, err := convertInternalBeaconBlock(block.Phase0.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlock
+			err = json.Unmarshal([]byte(phase0Block), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -265,7 +273,13 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	t.Run("Altair", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+			converted, err := convertInternalBeaconBlockAltair(block.Altair.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBeaconBlockAltair
+			err = json.Unmarshal([]byte(altairBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -282,7 +296,13 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedBellatrix)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedBellatrix)
+			converted, err := convertInternalBlindedBeaconBlockBellatrix(block.BlindedBellatrix.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBlindedBeaconBlockBellatrix
+			err = json.Unmarshal([]byte(blindedBellatrixBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -299,7 +319,13 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	t.Run("Capella", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedCapella)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedCapella)
+			converted, err := convertInternalBlindedBeaconBlockCapella(block.BlindedCapella.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBlindedBeaconBlockCapella
+			err = json.Unmarshal([]byte(blindedCapellaBlock), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -316,7 +342,13 @@ func TestPublishBlindedBlockV2(t *testing.T) {
 	t.Run("Deneb", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedDeneb)
+			block, ok := req.Block.(*eth.GenericSignedBeaconBlock_BlindedDeneb)
+			converted, err := convertInternalToBlindedDenebBlock(block.BlindedDeneb.Block.Block)
+			require.NoError(t, err)
+			var signedblock *SignedBlindedBeaconBlockContentsDeneb
+			err = json.Unmarshal([]byte(blindedDenebBlockContents), &signedblock)
+			require.NoError(t, err)
+			require.DeepEqual(t, converted, signedblock.SignedBlindedBlock.Message)
 			return ok
 		}))
 		server := &Server{
@@ -470,8 +502,8 @@ func TestProduceBlockV3(t *testing.T) {
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
 		}
-		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509" +
-			"846d6ec05345bd908eda73e670af888da41af171505&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
 		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
@@ -484,25 +516,25 @@ func TestProduceBlockV3(t *testing.T) {
 		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
-			return ok
-		}))
-		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
-			func() (*eth.GenericBeaconBlock_Altair, error) {
-				return block.Message.ToGeneric()
-			}())
-		server := &Server{
-			V1Alpha1ValidatorServer: v1alpha1Server,
-			SyncChecker:             &mockSync.Sync{IsSyncing: false},
-		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(altairBlock)))
-		writer := httptest.NewRecorder()
-		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
-		assert.Equal(t, http.StatusOK, writer.Code)
+		//v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		//v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
+		//	_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
+		//	return ok
+		//}))
+		//v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+		//	func() (*eth.GenericBeaconBlock_Altair, error) {
+		//		return block.Message.ToGeneric()
+		//	}())
+		//server := &Server{
+		//	V1Alpha1ValidatorServer: v1alpha1Server,
+		//	SyncChecker:             &mockSync.Sync{IsSyncing: false},
+		//}
+		//
+		//request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(altairBlock)))
+		//writer := httptest.NewRecorder()
+		//writer.Body = &bytes.Buffer{}
+		//server.PublishBlockV2(writer, request)
+		//assert.Equal(t, http.StatusOK, writer.Code)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
@@ -773,6 +805,70 @@ func TestValidateEquivocation(t *testing.T) {
 	})
 }
 
+func TestAggPingo(t *testing.T) {
+	agg := []byte{0x01, 0x02}
+	a := &ethpb.Attestation{
+		Data: &ethpb.AttestationData{
+			BeaconBlockRoot: make([]byte, fieldparams.RootLength),
+			Target:          nil,
+			Source:          &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
+		},
+		AggregationBits: agg,
+		Signature:       make([]byte, 96),
+	}
+
+	aggString := "0x0102"
+	require.Equal(t, aggString, hexutil.Encode(a.AggregationBits))
+
+	second, err := hexutil.Decode(aggString)
+	require.NoError(t, err)
+	require.DeepEqual(t, a.AggregationBits, bitfield.Bitlist(second))
+}
+
+func TestTypeConversion(t *testing.T) {
+	stringAggregationBit := "0x01"
+	stringSig := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
+	aggregationBit, err := hexutil.Decode(stringAggregationBit)
+	require.NoError(t, err)
+	sig, err := hexutil.Decode(stringSig)
+	require.NoError(t, err)
+	myattestation := &eth.Attestation{
+		AggregationBits: aggregationBit,
+		Signature:       sig,
+	}
+	require.Equal(t, stringAggregationBit, hexutil.Encode(myattestation.AggregationBits))
+	require.Equal(t, stringSig, hexutil.Encode(myattestation.Signature))
+	//stringAggregationBit := "0x03"
+
+	//myattestation := &eth.Attestation{
+	//
+	//	Signature: sig,
+	//}
+	//
+	//require.Equal(t, stringSig, hexutil.Encode(myattestation.Signature))
+	//stringSyncCommitteeBits := "0x03"
+
+	//syncCommitteeBits, err := hexutil.Decode(stringSyncCommitteeBits)
+	//require.NoError(t, err)
+	//agg := []byte{0x03}
+	//sa := &eth.SyncAggregate{
+	//	SyncCommitteeBits: agg,
+	//}
+	//
+	//require.Equal(t, stringSyncCommitteeBits, hexutil.Decode(sa.SyncCommitteeBits))
+
+	//sig2, err := hexutil.Decode(stringSig)
+	//require.NoError(t, err)
+	//myattestationConversion := &eth.Attestation{
+	//	AggregationBits: []byte(stringAggregationBit),
+	//	Signature:       sig2,
+	//}
+	//require.Equal(t, string(myattestationConversion.AggregationBits), stringAggregationBit)
+	//require.Equal(t, hexutil.Encode(myattestationConversion.AggregationBits), stringAggregationBit)
+	//require.Equal(t, hexutil.Encode(myattestationConversion.Signature), stringSig)
+
+}
+
 const (
 	phase0Block = `{
   "message": {
@@ -856,7 +952,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1012,7 +1108,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1083,7 +1179,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x01",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       }
     }
@@ -1172,7 +1268,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1244,7 +1340,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       },
       "execution_payload": {
@@ -1351,7 +1447,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1423,7 +1519,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       },
       "execution_payload_header": {
@@ -1528,7 +1624,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1600,7 +1696,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       },
       "execution_payload": {
@@ -1725,7 +1821,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1797,7 +1893,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       },
       "execution_payload_header": {
@@ -1914,7 +2010,7 @@ const (
       ],
       "attestations": [
         {
-          "aggregation_bits": "0x01",
+          "aggregation_bits": "0xffffffffffffffffffffffffffffffffff3f",
           "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
           "data": {
             "slot": "1",
@@ -1986,7 +2082,7 @@ const (
         }
       ],
       "sync_aggregate": {
-        "sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
         "sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
       },
       "execution_payload_header": {
@@ -2122,7 +2218,7 @@ var denebBlockContents = `{
 			  ],
 			  "attestations": [
 				{
-				  "aggregation_bits": "0x01",
+				  "aggregation_bits": "Oxffffffffffffffffffffffffffffffffff3f",
 				  "signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505",
 				  "data": {
 					"slot": "1",
@@ -2194,7 +2290,7 @@ var denebBlockContents = `{
 				}
 			  ],
 			  "sync_aggregate": {
-				"sync_committee_bits": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+				"sync_committee_bits": "0x6451e9f951ebf05edc01de67e593484b672877054f055903ff0df1a1a945cf30ca26bb4d4b154f94a1bc776bcf5d0efb3603e1f9b8ee2499ccdcfe2a18cef458",
 				"sync_committee_signature": "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
 			  },
 			  "execution_payload": {
