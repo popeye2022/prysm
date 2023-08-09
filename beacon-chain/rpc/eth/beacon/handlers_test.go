@@ -12,7 +12,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
-	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v4/api"
 	testing2 "github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain/testing"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
@@ -20,12 +19,10 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/testutil"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/state"
 	mockSync "github.com/prysmaticlabs/prysm/v4/beacon-chain/sync/initial-sync/testing"
-	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/config/params"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
 	"github.com/prysmaticlabs/prysm/v4/encoding/bytesutil"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/eth/v1"
 	"github.com/prysmaticlabs/prysm/v4/proto/migration"
 	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/testing/assert"
@@ -833,70 +830,6 @@ func TestValidateEquivocation(t *testing.T) {
 
 		assert.ErrorContains(t, "already exists", server.validateEquivocation(blk.Block()))
 	})
-}
-
-func TestAggPingo(t *testing.T) {
-	agg := []byte{0x01, 0x02}
-	a := &ethpb.Attestation{
-		Data: &ethpb.AttestationData{
-			BeaconBlockRoot: make([]byte, fieldparams.RootLength),
-			Target:          nil,
-			Source:          &ethpb.Checkpoint{Root: make([]byte, fieldparams.RootLength)},
-		},
-		AggregationBits: agg,
-		Signature:       make([]byte, 96),
-	}
-
-	aggString := "0x0102"
-	require.Equal(t, aggString, hexutil.Encode(a.AggregationBits))
-
-	second, err := hexutil.Decode(aggString)
-	require.NoError(t, err)
-	require.DeepEqual(t, a.AggregationBits, bitfield.Bitlist(second))
-}
-
-func TestTypeConversion(t *testing.T) {
-	stringAggregationBit := "0x01"
-	stringSig := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505"
-	aggregationBit, err := hexutil.Decode(stringAggregationBit)
-	require.NoError(t, err)
-	sig, err := hexutil.Decode(stringSig)
-	require.NoError(t, err)
-	myattestation := &eth.Attestation{
-		AggregationBits: aggregationBit,
-		Signature:       sig,
-	}
-	require.Equal(t, stringAggregationBit, hexutil.Encode(myattestation.AggregationBits))
-	require.Equal(t, stringSig, hexutil.Encode(myattestation.Signature))
-	//stringAggregationBit := "0x03"
-
-	//myattestation := &eth.Attestation{
-	//
-	//	Signature: sig,
-	//}
-	//
-	//require.Equal(t, stringSig, hexutil.Encode(myattestation.Signature))
-	//stringSyncCommitteeBits := "0x03"
-
-	//syncCommitteeBits, err := hexutil.Decode(stringSyncCommitteeBits)
-	//require.NoError(t, err)
-	//agg := []byte{0x03}
-	//sa := &eth.SyncAggregate{
-	//	SyncCommitteeBits: agg,
-	//}
-	//
-	//require.Equal(t, stringSyncCommitteeBits, hexutil.Decode(sa.SyncCommitteeBits))
-
-	//sig2, err := hexutil.Decode(stringSig)
-	//require.NoError(t, err)
-	//myattestationConversion := &eth.Attestation{
-	//	AggregationBits: []byte(stringAggregationBit),
-	//	Signature:       sig2,
-	//}
-	//require.Equal(t, string(myattestationConversion.AggregationBits), stringAggregationBit)
-	//require.Equal(t, hexutil.Encode(myattestationConversion.AggregationBits), stringAggregationBit)
-	//require.Equal(t, hexutil.Encode(myattestationConversion.Signature), stringSig)
-
 }
 
 const (
