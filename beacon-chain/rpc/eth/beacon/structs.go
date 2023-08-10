@@ -41,11 +41,11 @@ type BeaconBlockBodyAltair struct {
 	RandaoReveal      string                 `json:"randao_reveal" validate:"required"`
 	Eth1Data          *Eth1Data              `json:"eth1_data" validate:"required"`
 	Graffiti          string                 `json:"graffiti" validate:"required"`
-	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required"`
-	Attestations      []*Attestation         `json:"attestations" validate:"required"`
-	Deposits          []*Deposit             `json:"deposits" validate:"required"`
-	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required,dive"`
+	Attestations      []*Attestation         `json:"attestations" validate:"required,dive"`
+	Deposits          []*Deposit             `json:"deposits" validate:"required,dive"`
+	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate     *SyncAggregate         `json:"sync_aggregate" validate:"required"`
 }
 
@@ -66,11 +66,11 @@ type BeaconBlockBodyBellatrix struct {
 	RandaoReveal      string                 `json:"randao_reveal" validate:"required"`
 	Eth1Data          *Eth1Data              `json:"eth1_data" validate:"required"`
 	Graffiti          string                 `json:"graffiti" validate:"required"`
-	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required"`
-	Attestations      []*Attestation         `json:"attestations" validate:"required"`
-	Deposits          []*Deposit             `json:"deposits" validate:"required"`
-	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings []*ProposerSlashing    `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings []*AttesterSlashing    `json:"attester_slashings" validate:"required,dive"`
+	Attestations      []*Attestation         `json:"attestations" validate:"required,dive"`
+	Deposits          []*Deposit             `json:"deposits" validate:"required,dive"`
+	VoluntaryExits    []*SignedVoluntaryExit `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate     *SyncAggregate         `json:"sync_aggregate" validate:"required"`
 	ExecutionPayload  *ExecutionPayload      `json:"execution_payload" validate:"required"`
 }
@@ -92,11 +92,11 @@ type BlindedBeaconBlockBodyBellatrix struct {
 	RandaoReveal           string                  `json:"randao_reveal" validate:"required"`
 	Eth1Data               *Eth1Data               `json:"eth1_data" validate:"required"`
 	Graffiti               string                  `json:"graffiti" validate:"required"`
-	ProposerSlashings      []*ProposerSlashing     `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings      []*AttesterSlashing     `json:"attester_slashings" validate:"required"`
-	Attestations           []*Attestation          `json:"attestations" validate:"required"`
-	Deposits               []*Deposit              `json:"deposits" validate:"required"`
-	VoluntaryExits         []*SignedVoluntaryExit  `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings      []*ProposerSlashing     `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings      []*AttesterSlashing     `json:"attester_slashings" validate:"required,dive"`
+	Attestations           []*Attestation          `json:"attestations" validate:"required,dive"`
+	Deposits               []*Deposit              `json:"deposits" validate:"required,dive"`
+	VoluntaryExits         []*SignedVoluntaryExit  `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate          *SyncAggregate          `json:"sync_aggregate" validate:"required"`
 	ExecutionPayloadHeader *ExecutionPayloadHeader `json:"execution_payload_header" validate:"required"`
 }
@@ -118,14 +118,14 @@ type BeaconBlockBodyCapella struct {
 	RandaoReveal          string                        `json:"randao_reveal" validate:"required"`
 	Eth1Data              *Eth1Data                     `json:"eth1_data" validate:"required"`
 	Graffiti              string                        `json:"graffiti" validate:"required"`
-	ProposerSlashings     []*ProposerSlashing           `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings     []*AttesterSlashing           `json:"attester_slashings" validate:"required"`
-	Attestations          []*Attestation                `json:"attestations" validate:"required"`
-	Deposits              []*Deposit                    `json:"deposits" validate:"required"`
-	VoluntaryExits        []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings     []*ProposerSlashing           `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings     []*AttesterSlashing           `json:"attester_slashings" validate:"required,dive"`
+	Attestations          []*Attestation                `json:"attestations" validate:"required,dive"`
+	Deposits              []*Deposit                    `json:"deposits" validate:"required,dive"`
+	VoluntaryExits        []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate         *SyncAggregate                `json:"sync_aggregate" validate:"required"`
 	ExecutionPayload      *ExecutionPayloadCapella      `json:"execution_payload" validate:"required"`
-	BlsToExecutionChanges []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required"`
+	BlsToExecutionChanges []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required,dive"`
 }
 
 type SignedBlindedBeaconBlockCapella struct {
@@ -145,24 +145,24 @@ type BlindedBeaconBlockBodyCapella struct {
 	RandaoReveal           string                         `json:"randao_reveal" validate:"required"`
 	Eth1Data               *Eth1Data                      `json:"eth1_data" validate:"required"`
 	Graffiti               string                         `json:"graffiti" validate:"required"`
-	ProposerSlashings      []*ProposerSlashing            `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings      []*AttesterSlashing            `json:"attester_slashings" validate:"required"`
-	Attestations           []*Attestation                 `json:"attestations" validate:"required"`
-	Deposits               []*Deposit                     `json:"deposits" validate:"required"`
-	VoluntaryExits         []*SignedVoluntaryExit         `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings      []*ProposerSlashing            `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings      []*AttesterSlashing            `json:"attester_slashings" validate:"required,dive"`
+	Attestations           []*Attestation                 `json:"attestations" validate:"required,dive"`
+	Deposits               []*Deposit                     `json:"deposits" validate:"required,dive"`
+	VoluntaryExits         []*SignedVoluntaryExit         `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate          *SyncAggregate                 `json:"sync_aggregate" validate:"required"`
 	ExecutionPayloadHeader *ExecutionPayloadHeaderCapella `json:"execution_payload_header" validate:"required"`
-	BlsToExecutionChanges  []*SignedBlsToExecutionChange  `json:"bls_to_execution_changes" validate:"required"`
+	BlsToExecutionChanges  []*SignedBlsToExecutionChange  `json:"bls_to_execution_changes" validate:"required,dive"`
 }
 
 type SignedBeaconBlockContentsDeneb struct {
 	SignedBlock        *SignedBeaconBlockDeneb `json:"signed_block" validate:"required"`
-	SignedBlobSidecars []*SignedBlobSidecar    `json:"signed_blob_sidecars"`
+	SignedBlobSidecars []*SignedBlobSidecar    `json:"signed_blob_sidecars"  validate:"dive"`
 }
 
 type BeaconBlockContentsDeneb struct {
 	Block        *BeaconBlockDeneb `json:"block" validate:"required"`
-	BlobSidecars []*BlobSidecar    `json:"blob_sidecars"`
+	BlobSidecars []*BlobSidecar    `json:"blob_sidecars" validate:"dive"`
 }
 
 type SignedBeaconBlockDeneb struct {
@@ -182,15 +182,15 @@ type BeaconBlockBodyDeneb struct {
 	RandaoReveal          string                        `json:"randao_reveal" validate:"required"`
 	Eth1Data              *Eth1Data                     `json:"eth1_data" validate:"required"`
 	Graffiti              string                        `json:"graffiti" validate:"required"`
-	ProposerSlashings     []*ProposerSlashing           `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings     []*AttesterSlashing           `json:"attester_slashings" validate:"required"`
-	Attestations          []*Attestation                `json:"attestations" validate:"required"`
-	Deposits              []*Deposit                    `json:"deposits" validate:"required"`
-	VoluntaryExits        []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings     []*ProposerSlashing           `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings     []*AttesterSlashing           `json:"attester_slashings" validate:"required,dive"`
+	Attestations          []*Attestation                `json:"attestations" validate:"required,dive"`
+	Deposits              []*Deposit                    `json:"deposits" validate:"required,dive"`
+	VoluntaryExits        []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate         *SyncAggregate                `json:"sync_aggregate" validate:"required"`
 	ExecutionPayload      *ExecutionPayloadDeneb        `json:"execution_payload" validate:"required"`
-	BlsToExecutionChanges []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required"`
-	BlobKzgCommitments    []string                      `json:"blob_kzg_commitments" validate:"required"`
+	BlsToExecutionChanges []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required,dive"`
+	BlobKzgCommitments    []string                      `json:"blob_kzg_commitments" validate:"required,dive"`
 }
 
 type ExecutionPayloadDeneb struct {
@@ -209,18 +209,18 @@ type ExecutionPayloadDeneb struct {
 	BlobGasUsed   string        `json:"blob_gas_used" validate:"required"`   // new in deneb
 	ExcessBlobGas string        `json:"excess_blob_gas" validate:"required"` // new in deneb
 	BlockHash     string        `json:"block_hash" validate:"required"`
-	Transactions  []string      `json:"transactions" validate:"required"`
-	Withdrawals   []*Withdrawal `json:"withdrawals" validate:"required"`
+	Transactions  []string      `json:"transactions" validate:"required,dive,hexadecimal"`
+	Withdrawals   []*Withdrawal `json:"withdrawals" validate:"required,dive"`
 }
 
 type SignedBlindedBeaconBlockContentsDeneb struct {
 	SignedBlindedBlock        *SignedBlindedBeaconBlockDeneb `json:"signed_blinded_block" validate:"required"`
-	SignedBlindedBlobSidecars []*SignedBlindedBlobSidecar    `json:"signed_blinded_blob_sidecars"`
+	SignedBlindedBlobSidecars []*SignedBlindedBlobSidecar    `json:"signed_blinded_blob_sidecars" validate:"dive"`
 }
 
 type BlindedBeaconBlockContentsDeneb struct {
 	BlindedBlock        *BlindedBeaconBlockDeneb `json:"blinded_block" validate:"required"`
-	BlindedBlobSidecars []*BlindedBlobSidecar    `json:"blinded_blob_sidecars"`
+	BlindedBlobSidecars []*BlindedBlobSidecar    `json:"blinded_blob_sidecars" validate:"dive"`
 }
 
 type BlindedBeaconBlockDeneb struct {
@@ -240,15 +240,15 @@ type BlindedBeaconBlockBodyDeneb struct {
 	RandaoReveal           string                        `json:"randao_reveal" validate:"required"`
 	Eth1Data               *Eth1Data                     `json:"eth1_data" validate:"required"`
 	Graffiti               string                        `json:"graffiti" validate:"required"`
-	ProposerSlashings      []*ProposerSlashing           `json:"proposer_slashings" validate:"required"`
-	AttesterSlashings      []*AttesterSlashing           `json:"attester_slashings" validate:"required"`
-	Attestations           []*Attestation                `json:"attestations" validate:"required"`
-	Deposits               []*Deposit                    `json:"deposits" validate:"required"`
-	VoluntaryExits         []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required"`
+	ProposerSlashings      []*ProposerSlashing           `json:"proposer_slashings" validate:"required,dive"`
+	AttesterSlashings      []*AttesterSlashing           `json:"attester_slashings" validate:"required,dive"`
+	Attestations           []*Attestation                `json:"attestations" validate:"required,dive"`
+	Deposits               []*Deposit                    `json:"deposits" validate:"required,dive"`
+	VoluntaryExits         []*SignedVoluntaryExit        `json:"voluntary_exits" validate:"required,dive"`
 	SyncAggregate          *SyncAggregate                `json:"sync_aggregate" validate:"required"`
 	ExecutionPayloadHeader *ExecutionPayloadHeaderDeneb  `json:"execution_payload_header" validate:"required"`
-	BlsToExecutionChanges  []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required"`
-	BlobKzgCommitments     []string                      `json:"blob_kzg_commitments" validate:"required"`
+	BlsToExecutionChanges  []*SignedBlsToExecutionChange `json:"bls_to_execution_changes" validate:"required,dive"`
+	BlobKzgCommitments     []string                      `json:"blob_kzg_commitments" validate:"required,dive,hexadecimal"`
 }
 
 type SignedBlindedBlobSidecar struct {
@@ -306,7 +306,7 @@ type Attestation struct {
 }
 
 type Deposit struct {
-	Proof []string     `json:"proof" validate:"required"`
+	Proof []string     `json:"proof" validate:"required,dive,hexadecimal"`
 	Data  *DepositData `json:"data" validate:"required"`
 }
 
@@ -341,7 +341,7 @@ type BeaconBlockHeader struct {
 }
 
 type IndexedAttestation struct {
-	AttestingIndices []string         `json:"attesting_indices" validate:"required"`
+	AttestingIndices []string         `json:"attesting_indices" validate:"required,dive"`
 	Data             *AttestationData `json:"data" validate:"required"`
 	Signature        string           `json:"signature" validate:"required"`
 }
@@ -412,8 +412,8 @@ type ExecutionPayloadCapella struct {
 	ExtraData     string        `json:"extra_data" validate:"required"`
 	BaseFeePerGas string        `json:"base_fee_per_gas" validate:"required"`
 	BlockHash     string        `json:"block_hash" validate:"required"`
-	Transactions  []string      `json:"transactions" validate:"required"`
-	Withdrawals   []*Withdrawal `json:"withdrawals" validate:"required"`
+	Transactions  []string      `json:"transactions" validate:"required,dive"`
+	Withdrawals   []*Withdrawal `json:"withdrawals" validate:"required,dive"`
 }
 
 type ExecutionPayloadHeaderCapella struct {
