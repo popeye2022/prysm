@@ -1023,8 +1023,8 @@ func (b *SignedBeaconBlockContentsDeneb) ToGeneric() (*eth.GenericSignedBeaconBl
 	var signedBlobSidecars []*eth.SignedBlobSidecar
 	if len(b.SignedBlobSidecars) != 0 {
 		signedBlobSidecars = make([]*eth.SignedBlobSidecar, len(b.SignedBlobSidecars))
-		for i, s := range b.SignedBlobSidecars {
-			signedBlob, err := convertToSignedBlobSidecar(i, s)
+		for i := range b.SignedBlobSidecars {
+			signedBlob, err := convertToSignedBlobSidecar(i, b.SignedBlobSidecars[i])
 			if err != nil {
 				return nil, err
 			}
@@ -1060,8 +1060,8 @@ func (b *BeaconBlockContentsDeneb) ToGeneric() (*eth.GenericBeaconBlock, error) 
 	var blobSidecars []*eth.BlobSidecar
 	if len(b.BlobSidecars) != 0 {
 		blobSidecars = make([]*eth.BlobSidecar, len(b.BlobSidecars))
-		for i, s := range b.BlobSidecars {
-			blob, err := convertToBlobSidecar(i, s)
+		for i := range b.BlobSidecars {
+			blob, err := convertToBlobSidecar(i, b.BlobSidecars[i])
 			if err != nil {
 				return nil, err
 			}
@@ -2184,8 +2184,8 @@ func convertInternalToBlindedDenebBlock(b *eth.BlindedBeaconBlockDeneb) (*Blinde
 	}
 
 	blobKzgCommitments := make([]string, len(b.Body.BlobKzgCommitments))
-	for i, b := range b.Body.BlobKzgCommitments {
-		blobKzgCommitments[i] = hexutil.Encode(b)
+	for i := range b.Body.BlobKzgCommitments {
+		blobKzgCommitments[i] = hexutil.Encode(b.Body.BlobKzgCommitments[i])
 	}
 
 	return &BlindedBeaconBlockDeneb{
@@ -2281,8 +2281,8 @@ func convertInternalToDenebBlock(b *eth.BeaconBlockDeneb) (*BeaconBlockDeneb, er
 		return nil, err
 	}
 	blobKzgCommitments := make([]string, len(b.Body.BlobKzgCommitments))
-	for i, b := range b.Body.BlobKzgCommitments {
-		blobKzgCommitments[i] = hexutil.Encode(b)
+	for i := range b.Body.BlobKzgCommitments {
+		blobKzgCommitments[i] = hexutil.Encode(b.Body.BlobKzgCommitments[i])
 	}
 
 	return &BeaconBlockDeneb{
