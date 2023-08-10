@@ -2551,7 +2551,7 @@ func convertProposerSlashings(src []*ProposerSlashing) ([]*eth.ProposerSlashing,
 
 func convertInternalProposerSlashings(src []*eth.ProposerSlashing) ([]*ProposerSlashing, error) {
 	if src == nil {
-		return nil, errors.New("proposer slashings are emtpy, nothing to convert.")
+		return nil, errors.New("proposer slashings are empty, nothing to convert.")
 	}
 	proposerSlashings := make([]*ProposerSlashing, len(src))
 	for i, s := range src {
