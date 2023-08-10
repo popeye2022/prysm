@@ -2999,7 +2999,7 @@ func convertBlsChanges(src []*SignedBlsToExecutionChange) ([]*eth.SignedBLSToExe
 
 func convertInternalBlsChanges(src []*eth.SignedBLSToExecutionChange) ([]*SignedBlsToExecutionChange, error) {
 	if src == nil {
-		return nil, errors.New("BlsToExecutionChanges are emtpy, nothing to convert.")
+		return nil, errors.New("BlsToExecutionChanges are empty, nothing to convert.")
 	}
 	changes := make([]*SignedBlsToExecutionChange, len(src))
 	for i, ch := range src {
