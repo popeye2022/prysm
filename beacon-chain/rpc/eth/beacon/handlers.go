@@ -353,7 +353,7 @@ func publishBlindedBlockV2(bs *Server, w http.ResponseWriter, r *http.Request) {
 
 // PublishBlockV2 instructs the beacon node to broadcast a newly signed beacon block to the beacon network,
 // to be included in the beacon chain. A success response (20x) indicates that the block
-// passed gossip validation and was successfully broadcast onto the http2.
+// passed gossip validation and was successfully broadcast onto the network.
 // The beacon node is also expected to integrate the block into the state, but may broadcast it
 // before doing so, so as to aid timely delivery of the block. Should the block fail full
 // validation, a separate success response code (202) is used to indicate that the block was
