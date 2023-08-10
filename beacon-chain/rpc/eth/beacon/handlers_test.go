@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/golang/mock/gomock"
 	"github.com/prysmaticlabs/prysm/v4/api"
+	blockchainTesting "github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain/testing"
 	testing2 "github.com/prysmaticlabs/prysm/v4/beacon-chain/blockchain/testing"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
 	doublylinkedtree "github.com/prysmaticlabs/prysm/v4/beacon-chain/forkchoice/doubly-linked-tree"
@@ -514,12 +515,13 @@ func TestPublishBlindedBlockV2SSZ(t *testing.T) {
 
 func TestProduceBlockV3(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	var block *SignedBeaconBlock
-	err := json.Unmarshal([]byte(phase0Block), &block)
-	require.NoError(t, err)
-	jsonBytes, err := json.Marshal(block.Message)
-	require.NoError(t, err)
+
 	t.Run("Phase 0", func(t *testing.T) {
+		var block *SignedBeaconBlock
+		err := json.Unmarshal([]byte(phase0Block), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
 		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
 			func() (*eth.GenericBeaconBlock, error) {
@@ -543,76 +545,215 @@ func TestProduceBlockV3(t *testing.T) {
 		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("Altair", func(t *testing.T) {
-		//v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		//v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-		//	_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Altair)
-		//	return ok
-		//}))
-		//v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
-		//	func() (*eth.GenericBeaconBlock_Altair, error) {
-		//		return block.Message.ToGeneric()
-		//	}())
-		//server := &Server{
-		//	V1Alpha1ValidatorServer: v1alpha1Server,
-		//	SyncChecker:             &mockSync.Sync{IsSyncing: false},
-		//}
-		//
-		//request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(altairBlock)))
-		//writer := httptest.NewRecorder()
-		//writer.Body = &bytes.Buffer{}
-		//server.PublishBlockV2(writer, request)
-		//assert.Equal(t, http.StatusOK, writer.Code)
+		var block *SignedBeaconBlockAltair
+		err := json.Unmarshal([]byte(altairBlock), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"altair","execution_payload_blinded":false,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("Bellatrix", func(t *testing.T) {
+		var block *SignedBeaconBlockBellatrix
+		err := json.Unmarshal([]byte(bellatrixBlock), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(bellatrixBlock)))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"bellatrix","execution_payload_blinded":false,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("BlindedBellatrix", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockBellatrix
+		err := json.Unmarshal([]byte(blindedBellatrixBlock), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"bellatrix","execution_payload_blinded":true,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("Capella", func(t *testing.T) {
+		var block *SignedBeaconBlockCapella
+		err := json.Unmarshal([]byte(capellaBlock), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Capella)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(capellaBlock)))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"capella","execution_payload_blinded":false,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("Blinded Capella", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockCapella
+		err := json.Unmarshal([]byte(blindedCapellaBlock), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.Message)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				g, err := block.Message.ToGeneric()
+				require.NoError(t, err)
+				g.PayloadValue = 2000 //some fake value
+				return g, err
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"capella","execution_payload_blinded":true,"exeuction_payload_value":"2000","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "2000", true)
 	})
 	t.Run("Deneb", func(t *testing.T) {
+		var block *SignedBeaconBlockContentsDeneb
+		err := json.Unmarshal([]byte(denebBlockContents), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.ToUnsigned())
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Deneb)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.ToUnsigned().ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(denebBlockContents)))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"deneb","execution_payload_blinded":false,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("Blinded Deneb", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockContentsDeneb
+		err := json.Unmarshal([]byte(blindedDenebBlockContents), &block)
+		require.NoError(t, err)
+		jsonBytes, err := json.Marshal(block.ToUnsigned())
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.ToUnsigned().ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		want := fmt.Sprintf(`{"version":"deneb","execution_payload_blinded":true,"exeuction_payload_value":"0","data":%s}`, string(jsonBytes))
+		body := strings.ReplaceAll(writer.Body.String(), "\n", "")
+		require.Equal(t, want, body)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("invalid query parameter slot empty", func(t *testing.T) {
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
@@ -653,18 +794,6 @@ func TestProduceBlockV3(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, writer.Code)
 		assert.Equal(t, true, strings.Contains(writer.Body.String(), "a valid randao reveal is required as a query parameter"))
 	})
-	t.Run("invalid block", func(t *testing.T) {
-		server := &Server{
-			SyncChecker: &mockSync.Sync{IsSyncing: false},
-		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(blindedBellatrixBlock)))
-		writer := httptest.NewRecorder()
-		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
-		assert.Equal(t, http.StatusBadRequest, writer.Code)
-		assert.Equal(t, true, strings.Contains(writer.Body.String(), "Body does not represent a valid block type"))
-	})
 	t.Run("syncing", func(t *testing.T) {
 		chainService := &testing2.ChainService{}
 		server := &Server{
@@ -677,7 +806,7 @@ func TestProduceBlockV3(t *testing.T) {
 		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte("foo")))
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusServiceUnavailable, writer.Code)
 		assert.Equal(t, true, strings.Contains(writer.Body.String(), "Beacon node is currently syncing and not serving request on that endpoint"))
 	})
@@ -685,93 +814,260 @@ func TestProduceBlockV3(t *testing.T) {
 
 func TestProduceBlockV3SSZ(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	t.Run("Bellatrix", func(t *testing.T) {
+	t.Run("Phase 0", func(t *testing.T) {
+		var block *SignedBeaconBlock
+		err := json.Unmarshal([]byte(phase0Block), &block)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
 		}
-		var bellablock SignedBeaconBlockBellatrix
-		err := json.Unmarshal([]byte(bellatrixBlock), &bellablock)
-		require.NoError(t, err)
-		genericBlock, err := bellablock.ToGeneric()
-		require.NoError(t, err)
-		sszvalue, err := genericBlock.GetBellatrix().MarshalSSZ()
-		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader(sszvalue))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		request.Header.Set("Accept", "application/octet-stream")
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_Phase0)
+		require.Equal(t, true, ok)
+		ssz, err := bl.Phase0.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("Altair", func(t *testing.T) {
+		var block *SignedBeaconBlockAltair
+		err := json.Unmarshal([]byte(altairBlock), &block)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		request.Header.Set("Accept", "application/octet-stream")
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_Altair)
+		require.Equal(t, true, ok)
+		ssz, err := bl.Altair.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("Bellatrix", func(t *testing.T) {
+		var block *SignedBeaconBlockBellatrix
+		err := json.Unmarshal([]byte(bellatrixBlock), &block)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		request.Header.Set("Accept", "application/octet-stream")
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_Bellatrix)
+		require.Equal(t, true, ok)
+		ssz, err := bl.Bellatrix.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("BlindedBellatrix", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockBellatrix
+		err := json.Unmarshal([]byte(blindedBellatrixBlock), &block)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		request.Header.Set("Accept", "application/octet-stream")
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_BlindedBellatrix)
+		require.Equal(t, true, ok)
+		ssz, err := bl.BlindedBellatrix.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 	t.Run("Capella", func(t *testing.T) {
+		var block *SignedBeaconBlockCapella
+		err := json.Unmarshal([]byte(capellaBlock), &block)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Capella)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.Message.ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		var cblock SignedBeaconBlockCapella
-		err := json.Unmarshal([]byte(capellaBlock), &cblock)
-		require.NoError(t, err)
-		genericBlock, err := cblock.ToGeneric()
-		require.NoError(t, err)
-		sszvalue, err := genericBlock.GetCapella().MarshalSSZ()
-		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader(sszvalue))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		request.Header.Set("Accept", "application/octet-stream")
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_Capella)
+		require.Equal(t, true, ok)
+		ssz, err := bl.Capella.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
+	})
+	t.Run("Blinded Capella", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockCapella
+		err := json.Unmarshal([]byte(blindedCapellaBlock), &block)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				g, err := block.Message.ToGeneric()
+				require.NoError(t, err)
+				g.PayloadValue = 2000 //some fake value
+				return g, err
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
+		server := &Server{
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
+		}
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		request.Header.Set("Accept", "application/octet-stream")
+		writer := httptest.NewRecorder()
+		writer.Body = &bytes.Buffer{}
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericSignedBeaconBlock_BlindedCapella)
+		require.Equal(t, true, ok)
+		ssz, err := bl.BlindedCapella.Block.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "2000", true)
 	})
 	t.Run("Deneb", func(t *testing.T) {
+		var block *SignedBeaconBlockContentsDeneb
+		err := json.Unmarshal([]byte(denebBlockContents), &block)
+		require.NoError(t, err)
 		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
-		v1alpha1Server.EXPECT().ProposeBeaconBlock(gomock.Any(), mock.MatchedBy(func(req *eth.GenericSignedBeaconBlock) bool {
-			_, ok := req.Block.(*eth.GenericSignedBeaconBlock_Deneb)
-			return ok
-		}))
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.ToUnsigned().ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
 			V1Alpha1ValidatorServer: v1alpha1Server,
 			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		var dblock SignedBeaconBlockContentsDeneb
-		err := json.Unmarshal([]byte(denebBlockContents), &dblock)
-		require.NoError(t, err)
-		genericBlock, err := dblock.ToGeneric()
-		require.NoError(t, err)
-		v2block, err := migration.V1Alpha1SignedBeaconBlockDenebAndBlobsToV2(genericBlock.GetDeneb())
-		require.NoError(t, err)
-		sszvalue, err := v2block.MarshalSSZ()
-		require.NoError(t, err)
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader(sszvalue))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
 		request.Header.Set("Accept", "application/octet-stream")
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
+		server.ProduceBlockV3(writer, request)
 		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToUnsigned().ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericBeaconBlock_Deneb)
+		require.Equal(t, true, ok)
+		ssz, err := bl.Deneb.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
-	t.Run("invalid block", func(t *testing.T) {
+	t.Run("Blinded Deneb", func(t *testing.T) {
+		var block *SignedBlindedBeaconBlockContentsDeneb
+		err := json.Unmarshal([]byte(blindedDenebBlockContents), &block)
+		require.NoError(t, err)
+		v1alpha1Server := mock2.NewMockBeaconNodeValidatorServer(ctrl)
+		v1alpha1Server.EXPECT().GetBeaconBlock(gomock.Any(), gomock.Any()).Return(
+			func() (*eth.GenericBeaconBlock, error) {
+				return block.ToUnsigned().ToGeneric()
+			}())
+		mockChainService := &blockchainTesting.ChainService{}
 		server := &Server{
-			SyncChecker: &mockSync.Sync{IsSyncing: false},
+			V1Alpha1ValidatorServer: v1alpha1Server,
+			SyncChecker:             &mockSync.Sync{IsSyncing: false},
+			OptimisticModeFetcher:   mockChainService,
 		}
-
-		request := httptest.NewRequest(http.MethodPost, "http://foo.example", bytes.NewReader([]byte(blindedBellatrixBlock)))
+		rr := "0x1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505cc411d61252fb6cb3fa0017b679f8bb2305b26a285fa2737f175668d0dff91cc1b66ac1fb663c9bc59509846d6ec05345bd908eda73e670af888da41af171505" +
+			"&graffiti=0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+		request := httptest.NewRequest(http.MethodGet, fmt.Sprintf("http://foo.example/eth/v3/validator/blocks/1?randao_reveal=%s", rr), nil)
+		request.Header.Set("Accept", "application/octet-stream")
 		writer := httptest.NewRecorder()
 		writer.Body = &bytes.Buffer{}
-		server.PublishBlockV2(writer, request)
-		assert.Equal(t, http.StatusBadRequest, writer.Code)
-		assert.Equal(t, true, strings.Contains(writer.Body.String(), "Body does not represent a valid block type"))
+		server.ProduceBlockV3(writer, request)
+		assert.Equal(t, http.StatusOK, writer.Code)
+		g, err := block.ToUnsigned().ToGeneric()
+		require.NoError(t, err)
+		bl, ok := g.Block.(*eth.GenericBeaconBlock_BlindedDeneb)
+		require.Equal(t, true, ok)
+		ssz, err := bl.BlindedDeneb.MarshalSSZ()
+		require.Equal(t, string(ssz), writer.Body.String())
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "true", true)
+		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
 	})
 }
 
@@ -966,7 +1262,8 @@ const (
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-            "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+            "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
+			"0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
           ],
           "data": {
             "pubkey": "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a",
@@ -1122,7 +1419,8 @@ const (
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-            "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
+            "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
+			"0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
           ],
           "data": {
             "pubkey": "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a",
@@ -1462,7 +1760,7 @@ const (
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
             "0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2",
-			"0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"	
+			"0xcf8e0d4e9587369b2301d0790347320302cc0943d5a1884560367e8208d920f2"
           ],
           "data": {
             "pubkey": "0x93247f2209abcacf57b75a51dafae777f9dd38bc7053d1af526f220a7489a6d3a2753e5f3e8b1cfe39b56f43611df74a",
