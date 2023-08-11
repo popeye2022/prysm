@@ -1039,6 +1039,7 @@ func TestProduceBlockV3SSZ(t *testing.T) {
 		bl, ok := g.Block.(*eth.GenericBeaconBlock_Deneb)
 		require.Equal(t, true, ok)
 		ssz, err := bl.Deneb.MarshalSSZ()
+		require.NoError(t, err)
 		require.Equal(t, string(ssz), writer.Body.String())
 		require.Equal(t, writer.Header().Get(api.ExecutionPayloadBlindedHeader) == "false", true)
 		require.Equal(t, writer.Header().Get(api.ExecutionPayloadValueHeader) == "0", true)
