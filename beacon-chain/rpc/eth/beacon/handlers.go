@@ -842,7 +842,7 @@ func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1req *eth.BlockRequest) {
 	isSSZ, err := http2.SszRequested(r)
 	if err != nil {
-		log.WithError(err).Error("verifying ssz request failed, defaulting to non ssz.")
+		log.WithError(err).Error("Checking for SSZ failed, defaulting to JSON")
 		isSSZ = false
 	}
 	validate := validator.New()
