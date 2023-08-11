@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -16,6 +15,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/api"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/transition"
 	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/helpers"
+	"github.com/prysmaticlabs/prysm/v4/beacon-chain/rpc/eth/shared"
 	fieldparams "github.com/prysmaticlabs/prysm/v4/config/fieldparams"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/blocks"
 	"github.com/prysmaticlabs/prysm/v4/consensus-types/interfaces"
@@ -779,15 +779,11 @@ func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 	rawGraffiti := r.URL.Query().Get("graffiti")
 	rawSkipRandaoVerification := r.URL.Query().Get("skip_randao_verification")
 
-	if rawSlot == "" {
-		http2.HandleError(w, "slot is required", http.StatusBadRequest)
+	slot, valid := shared.ValidateUint(w, "Slot", rawSlot)
+	if !valid {
 		return
 	}
-	slot, err := strconv.ParseUint(rawSlot, 10, 64)
-	if err != nil {
-		http2.HandleError(w, "slot is invalid: "+err.Error(), http.StatusBadRequest)
-		return
-	}
+
 	var randaoReveal []byte
 	if rawSkipRandaoVerification == "true" {
 		randaoReveal = primitives.PointAtInfinity
