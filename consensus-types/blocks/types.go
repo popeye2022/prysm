@@ -37,7 +37,6 @@ var (
 type BeaconBlockBody struct {
 	version                int
 	isBlinded              bool
-	valueInGwei            uint64
 	randaoReveal           [field_params.BLSSignatureLength]byte
 	eth1Data               *eth.Eth1Data
 	graffiti               [field_params.RootLength]byte

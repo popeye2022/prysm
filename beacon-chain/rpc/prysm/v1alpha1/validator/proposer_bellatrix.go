@@ -88,11 +88,9 @@ func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, loc
 		// If we can't get the builder value, just use local block.
 		if higherValueBuilder && withdrawalsMatched { // Builder value is higher and withdrawals match.
 			blk.SetBlinded(true)
-			blk.SetValueInGwei(builderValueGwei)
 			if err := blk.SetExecution(builderPayload); err != nil {
 				log.WithError(err).Warn("Proposer: failed to set builder payload")
 				blk.SetBlinded(false)
-				blk.SetValueInGwei(localValueGwei)
 				return blk.SetExecution(localPayload)
 			} else {
 				return nil
@@ -114,24 +112,9 @@ func setExecutionData(ctx context.Context, blk interfaces.SignedBeaconBlock, loc
 		return blk.SetExecution(localPayload)
 	default: // Bellatrix case.
 		blk.SetBlinded(true)
-		builderValue, err := builderPayload.ValueInGwei()
-		if err != nil {
-			log.WithError(err).Warn("Proposer: failed to set builder payload value")
-			blk.SetBlinded(false)
-			localPayloadValue, err := localPayload.ValueInGwei()
-			if err == nil {
-				blk.SetValueInGwei(localPayloadValue)
-			}
-			return blk.SetExecution(localPayload)
-		}
-		blk.SetValueInGwei(builderValue)
 		if err := blk.SetExecution(builderPayload); err != nil {
 			log.WithError(err).Warn("Proposer: failed to set builder payload")
 			blk.SetBlinded(false)
-			localPayloadValue, err := localPayload.ValueInGwei()
-			if err == nil {
-				blk.SetValueInGwei(localPayloadValue)
-			}
 			return blk.SetExecution(localPayload)
 		} else {
 			return nil

@@ -906,7 +906,6 @@ func handleProducePhase0V3(context context.Context, isSSZ bool, phase0Block *eth
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceAltairV3(context context.Context, isSSZ bool, altairBlock *eth.GenericBeaconBlock_Altair, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -932,7 +931,6 @@ func handleProduceAltairV3(context context.Context, isSSZ bool, altairBlock *eth
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceBellatrixV3(context context.Context, isSSZ bool, bellatrixBlock *eth.GenericBeaconBlock_Bellatrix, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -958,7 +956,6 @@ func handleProduceBellatrixV3(context context.Context, isSSZ bool, bellatrixBloc
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceBlindedBellatrixV3(context context.Context, isSSZ bool, blindedBellatrixBlock *eth.GenericBeaconBlock_BlindedBellatrix, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -984,7 +981,6 @@ func handleProduceBlindedBellatrixV3(context context.Context, isSSZ bool, blinde
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceBlindedCapellaV3(context context.Context, isSSZ bool, blindedCapellaBlock *eth.GenericBeaconBlock_BlindedCapella, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -1010,7 +1006,6 @@ func handleProduceBlindedCapellaV3(context context.Context, isSSZ bool, blindedC
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceCapellaV3(context context.Context, isSSZ bool, capellaBlock *eth.GenericBeaconBlock_Capella, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -1036,7 +1031,6 @@ func handleProduceCapellaV3(context context.Context, isSSZ bool, capellaBlock *e
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    block,
 	})
-	return
 }
 
 func handleProduceBlindedDenebV3(context context.Context, isSSZ bool, blindedDenebBlockContents *eth.GenericBeaconBlock_BlindedDeneb, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -1062,7 +1056,6 @@ func handleProduceBlindedDenebV3(context context.Context, isSSZ bool, blindedDen
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
 		Data:                    blockContents,
 	})
-	return
 }
 
 func handleProduceDenebV3(context context.Context, isSSZ bool, denebBlockContents *eth.GenericBeaconBlock_Deneb, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
@@ -1088,5 +1081,4 @@ func handleProduceDenebV3(context context.Context, isSSZ bool, denebBlockContent
 		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
 		Data:                    blockContents,
 	})
-	return
 }

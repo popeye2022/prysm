@@ -91,7 +91,6 @@ type SignedBeaconBlock interface {
 	SetEth1Data(*ethpb.Eth1Data)
 	SetRandaoReveal([]byte)
 	SetBlinded(bool)
-	SetValueInGwei(uint64)
 	SetStateRoot([]byte)
 	SetParentRoot([]byte)
 	SetProposerIndex(idx primitives.ValidatorIndex)
