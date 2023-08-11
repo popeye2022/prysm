@@ -26,6 +26,7 @@ import (
 	"github.com/prysmaticlabs/prysm/v4/proto/migration"
 	eth "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/prysmaticlabs/prysm/v4/runtime/version"
+	"go.opencensus.io/trace"
 )
 
 const (
@@ -767,6 +768,8 @@ func (bs *Server) checkSync(ctx context.Context, w http.ResponseWriter) bool {
 // Metadata in the response indicates the type of block produced, and the supported types of block
 // will be added to as forks progress.
 func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
+	ctx, span := trace.StartSpan(r.Context(), "validator.ProduceBlockV3")
+	defer span.End()
 	if ok := bs.checkSync(r.Context(), w); !ok {
 		return
 	}
@@ -777,20 +780,12 @@ func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 	rawSkipRandaoVerification := r.URL.Query().Get("skip_randao_verification")
 
 	if rawSlot == "" {
-		errJson := &http2.DefaultErrorJson{
-			Message: "slot is required",
-			Code:    http.StatusBadRequest,
-		}
-		http2.WriteError(w, errJson)
+		http2.HandleError(w, "slot is required", http.StatusBadRequest)
 		return
 	}
 	slot, err := strconv.ParseUint(rawSlot, 10, 64)
 	if err != nil {
-		errJson := &http2.DefaultErrorJson{
-			Message: "slot is invalid: " + err.Error(),
-			Code:    http.StatusBadRequest,
-		}
-		http2.WriteError(w, errJson)
+		http2.HandleError(w, "slot is invalid: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	var randaoReveal []byte
@@ -799,66 +794,56 @@ func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 	} else {
 		rr, err := hexutil.Decode(rawRandaoReveal)
 		if err != nil {
-			errJson := &http2.DefaultErrorJson{
-				Message: errors.Wrap(err, "unable to decode randao reveal").Error(),
-				Code:    http.StatusBadRequest,
-			}
-			http2.WriteError(w, errJson)
+			http2.HandleError(w, errors.Wrap(err, "unable to decode randao reveal").Error(), http.StatusBadRequest)
 			return
 		}
 		randaoReveal = rr
 	}
 	if len(randaoReveal) != fieldparams.BLSSignatureLength {
-		errJson := &http2.DefaultErrorJson{
-			Message: fmt.Sprintf("a valid randao reveal is required as a query parameter: received length %d but wanted length %d", len(randaoReveal), fieldparams.BLSSignatureLength),
-			Code:    http.StatusBadRequest,
-		}
-		http2.WriteError(w, errJson)
+		http2.HandleError(w, fmt.Sprintf("a valid randao reveal is required as a query parameter: received length %d but wanted length %d", len(randaoReveal), fieldparams.BLSSignatureLength), http.StatusBadRequest)
 		return
 	}
 	var graffiti []byte
 	if rawGraffiti != "" {
 		g, err := hexutil.Decode(rawGraffiti)
 		if err != nil {
-			errJson := &http2.DefaultErrorJson{
-				Message: errors.Wrap(err, "unable to decode graffiti").Error(),
-				Code:    http.StatusBadRequest,
-			}
-			http2.WriteError(w, errJson)
+			http2.HandleError(w, errors.Wrap(err, "unable to decode graffiti").Error(), http.StatusBadRequest)
 			return
 		}
 		graffiti = g
 	}
 
-	produceBlockV3(bs, w, r, &eth.BlockRequest{
+	produceBlockV3(ctx, bs, w, r, &eth.BlockRequest{
 		Slot:         primitives.Slot(slot),
 		RandaoReveal: randaoReveal,
 		Graffiti:     graffiti,
 		SkipMevBoost: false,
 	})
-
 }
 
-func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1req *eth.BlockRequest) {
+func produceBlockV3(context context.Context, bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1req *eth.BlockRequest) {
+	ctx, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal")
+	defer span.End()
 	isSSZ, err := http2.SszRequested(r)
 	if err != nil {
 		log.WithError(err).Error("Checking for SSZ failed, defaulting to JSON")
 		isSSZ = false
 	}
-	validate := validator.New()
 	v1alpha1resp, err := bs.V1Alpha1ValidatorServer.GetBeaconBlock(r.Context(), v1alpha1req)
 	if err != nil {
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", v1alpha1resp.IsBlinded))
+	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", v1alpha1resp.PayloadValue))
 	phase0Block, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Phase0)
 	if ok {
-		handleProducePhase0V3(isSSZ, phase0Block, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProducePhase0V3(ctx, isSSZ, phase0Block, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	altairBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Altair)
 	if ok {
-		handleProduceAltairV3(isSSZ, altairBlock, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceAltairV3(ctx, isSSZ, altairBlock, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	optimistic, err := bs.OptimisticModeFetcher.IsOptimistic(r.Context())
@@ -867,44 +852,44 @@ func produceBlockV3(bs *Server, w http.ResponseWriter, r *http.Request, v1alpha1
 		return
 	}
 	if optimistic {
-		http2.HandleError(w, "The node is currently optimistic and cannot serve validators", http.StatusInternalServerError)
+		http2.HandleError(w, "The node is currently optimistic and cannot serve validators", http.StatusServiceUnavailable)
 		return
 	}
 	blindedBellatrixBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_BlindedBellatrix)
 	if ok {
-		handleProduceBlindedBellatrixV3(isSSZ, blindedBellatrixBlock, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceBlindedBellatrixV3(ctx, isSSZ, blindedBellatrixBlock, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	bellatrixBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Bellatrix)
 	if ok {
-		handleProduceBellatrixV3(isSSZ, bellatrixBlock, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceBellatrixV3(ctx, isSSZ, bellatrixBlock, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	blindedCapellaBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_BlindedCapella)
 	if ok {
-		handleProduceBlindedCapellaV3(isSSZ, blindedCapellaBlock, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceBlindedCapellaV3(ctx, isSSZ, blindedCapellaBlock, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	capellaBlock, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Capella)
 	if ok {
-		handleProduceCapellaV3(isSSZ, capellaBlock, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceCapellaV3(ctx, isSSZ, capellaBlock, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	blindedDenebBlockContents, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_BlindedDeneb)
 	if ok {
-		handleProduceBlindedDenebV3(isSSZ, blindedDenebBlockContents, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceBlindedDenebV3(ctx, isSSZ, blindedDenebBlockContents, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 	denebBlockContents, ok := v1alpha1resp.Block.(*eth.GenericBeaconBlock_Deneb)
 	if ok {
-		handleProduceDenebV3(isSSZ, denebBlockContents, w, validate, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
+		handleProduceDenebV3(ctx, isSSZ, denebBlockContents, w, v1alpha1resp.IsBlinded, v1alpha1resp.PayloadValue)
 		return
 	}
 }
 
-func handleProducePhase0V3(isSSZ bool, phase0Block *eth.GenericBeaconBlock_Phase0, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProducePhase0V3(context context.Context, isSSZ bool, phase0Block *eth.GenericBeaconBlock_Phase0, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProducePhase0V3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := phase0Block.Phase0.MarshalSSZ()
 		if err != nil {
@@ -919,20 +904,18 @@ func handleProducePhase0V3(isSSZ bool, phase0Block *eth.GenericBeaconBlock_Phase
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &Phase0ProduceBlockV3Response{
-			Version:                 version.String(version.Phase0),
-			ExecutionPayloadBlinded: false,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &Phase0ProduceBlockV3Response{
+		Version:                 version.String(version.Phase0),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceAltairV3(isSSZ bool, altairBlock *eth.GenericBeaconBlock_Altair, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceAltairV3(context context.Context, isSSZ bool, altairBlock *eth.GenericBeaconBlock_Altair, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceAltairV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := altairBlock.Altair.MarshalSSZ()
 		if err != nil {
@@ -947,20 +930,18 @@ func handleProduceAltairV3(isSSZ bool, altairBlock *eth.GenericBeaconBlock_Altai
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &AltairProduceBlockV3Response{
-			Version:                 version.String(version.Altair),
-			ExecutionPayloadBlinded: false,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &AltairProduceBlockV3Response{
+		Version:                 version.String(version.Altair),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceBellatrixV3(isSSZ bool, bellatrixBlock *eth.GenericBeaconBlock_Bellatrix, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceBellatrixV3(context context.Context, isSSZ bool, bellatrixBlock *eth.GenericBeaconBlock_Bellatrix, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceBellatrixV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := bellatrixBlock.Bellatrix.MarshalSSZ()
 		if err != nil {
@@ -975,20 +956,18 @@ func handleProduceBellatrixV3(isSSZ bool, bellatrixBlock *eth.GenericBeaconBlock
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &BellatrixProduceBlockV3Response{
-			Version:                 version.String(version.Bellatrix),
-			ExecutionPayloadBlinded: false,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &BellatrixProduceBlockV3Response{
+		Version:                 version.String(version.Bellatrix),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceBlindedBellatrixV3(isSSZ bool, blindedBellatrixBlock *eth.GenericBeaconBlock_BlindedBellatrix, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceBlindedBellatrixV3(context context.Context, isSSZ bool, blindedBellatrixBlock *eth.GenericBeaconBlock_BlindedBellatrix, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceBlindedBellatrixV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := blindedBellatrixBlock.BlindedBellatrix.MarshalSSZ()
 		if err != nil {
@@ -1003,20 +982,18 @@ func handleProduceBlindedBellatrixV3(isSSZ bool, blindedBellatrixBlock *eth.Gene
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &BlindedBellatrixProduceBlockV3Response{
-			Version:                 version.String(version.Bellatrix),
-			ExecutionPayloadBlinded: true,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue),
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &BlindedBellatrixProduceBlockV3Response{
+		Version:                 version.String(version.Bellatrix),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceBlindedCapellaV3(isSSZ bool, blindedCapellaBlock *eth.GenericBeaconBlock_BlindedCapella, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceBlindedCapellaV3(context context.Context, isSSZ bool, blindedCapellaBlock *eth.GenericBeaconBlock_BlindedCapella, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceBlindedCapellaV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := blindedCapellaBlock.BlindedCapella.MarshalSSZ()
 		if err != nil {
@@ -1031,20 +1008,18 @@ func handleProduceBlindedCapellaV3(isSSZ bool, blindedCapellaBlock *eth.GenericB
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &BlindedCapellaProduceBlockV3Response{
-			Version:                 version.String(version.Capella),
-			ExecutionPayloadBlinded: true,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue),
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &BlindedCapellaProduceBlockV3Response{
+		Version:                 version.String(version.Capella),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceCapellaV3(isSSZ bool, capellaBlock *eth.GenericBeaconBlock_Capella, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceCapellaV3(context context.Context, isSSZ bool, capellaBlock *eth.GenericBeaconBlock_Capella, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceCapellaV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := capellaBlock.Capella.MarshalSSZ()
 		if err != nil {
@@ -1059,20 +1034,18 @@ func handleProduceCapellaV3(isSSZ bool, capellaBlock *eth.GenericBeaconBlock_Cap
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(block); err == nil {
-		http2.WriteJson(w, &CapellaProduceBlockV3Response{
-			Version:                 version.String(version.Capella),
-			ExecutionPayloadBlinded: false,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-			Data:                    block,
-		})
-		return
-	}
+	http2.WriteJson(w, &CapellaProduceBlockV3Response{
+		Version:                 version.String(version.Capella),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
+		Data:                    block,
+	})
+	return
 }
 
-func handleProduceBlindedDenebV3(isSSZ bool, blindedDenebBlockContents *eth.GenericBeaconBlock_BlindedDeneb, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceBlindedDenebV3(context context.Context, isSSZ bool, blindedDenebBlockContents *eth.GenericBeaconBlock_BlindedDeneb, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceBlindedDenebV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := blindedDenebBlockContents.BlindedDeneb.MarshalSSZ()
 		if err != nil {
@@ -1087,20 +1060,18 @@ func handleProduceBlindedDenebV3(isSSZ bool, blindedDenebBlockContents *eth.Gene
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(blockContents); err == nil {
-		http2.WriteJson(w, &BlindedDenebProduceBlockV3Response{
-			Version:                 version.String(version.Deneb),
-			ExecutionPayloadBlinded: true,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue),
-			Data:                    blockContents,
-		})
-		return
-	}
+	http2.WriteJson(w, &BlindedDenebProduceBlockV3Response{
+		Version:                 version.String(version.Deneb),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue),
+		Data:                    blockContents,
+	})
+	return
 }
 
-func handleProduceDenebV3(isSSZ bool, denebBlockContents *eth.GenericBeaconBlock_Deneb, w http.ResponseWriter, validate *validator.Validate, isBlinded bool, payloadValue uint64) {
-	w.Header().Set(api.ExecutionPayloadBlindedHeader, fmt.Sprintf("%v", isBlinded))
-	w.Header().Set(api.ExecutionPayloadValueHeader, fmt.Sprintf("%d", payloadValue))
+func handleProduceDenebV3(context context.Context, isSSZ bool, denebBlockContents *eth.GenericBeaconBlock_Deneb, w http.ResponseWriter, isBlinded bool, payloadValue uint64) {
+	_, span := trace.StartSpan(context, "validator.ProduceBlockV3.internal.handleProduceDenebV3")
+	defer span.End()
 	if isSSZ {
 		sszResp, err := denebBlockContents.Deneb.MarshalSSZ()
 		if err != nil {
@@ -1115,13 +1086,11 @@ func handleProduceDenebV3(isSSZ bool, denebBlockContents *eth.GenericBeaconBlock
 		http2.HandleError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = validate.Struct(blockContents); err == nil {
-		http2.WriteJson(w, &DenebProduceBlockV3Response{
-			Version:                 version.String(version.Deneb),
-			ExecutionPayloadBlinded: false,
-			ExeuctionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
-			Data:                    blockContents,
-		})
-		return
-	}
+	http2.WriteJson(w, &DenebProduceBlockV3Response{
+		Version:                 version.String(version.Deneb),
+		ExecutionPayloadBlinded: isBlinded,
+		ExecutionPayloadValue:   fmt.Sprintf("%d", payloadValue), // mev not available at this point
+		Data:                    blockContents,
+	})
+	return
 }

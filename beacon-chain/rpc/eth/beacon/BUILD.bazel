@@ -3,7 +3,6 @@ load("@prysm//tools/go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "api_structs.go",
         "blinded_blocks.go",
         "blocks.go",
         "config.go",
@@ -13,6 +12,7 @@ go_library(
         "server.go",
         "state.go",
         "structs.go",
+        "structs_block_responses.go",
         "structs_conversions.go",
         "sync_committee.go",
         "validator.go",
