@@ -779,7 +779,7 @@ func (bs *Server) ProduceBlockV3(w http.ResponseWriter, r *http.Request) {
 	rawGraffiti := r.URL.Query().Get("graffiti")
 	rawSkipRandaoVerification := r.URL.Query().Get("skip_randao_verification")
 
-	slot, valid := shared.ValidateUint(w, "Slot", rawSlot)
+	slot, valid := shared.ValidateUint(w, "slot", rawSlot)
 	if !valid {
 		return
 	}
