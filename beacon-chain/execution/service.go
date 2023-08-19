@@ -482,7 +482,7 @@ func (s *Service) handleETH1FollowDistance() {
 	// logs for the powchain service to process. Also it is a potential
 	// failure condition as would mean we have not respected the protocol threshold.
 	if s.latestEth1Data.LastRequestedBlock == s.latestEth1Data.BlockHeight {
-		log.Error("Beacon node is not respecting the follow distance %s,  %s", s.latestEth1Data.LastRequestedBlock, s.latestEth1Data.BlockHeight)
+		log.Errorf("Beacon node is not respecting the follow distance %s,  %s", s.latestEth1Data.LastRequestedBlock, s.latestEth1Data.BlockHeight)
 		return
 	}
 	if err := s.requestBatchedHeadersAndLogs(ctx); err != nil {
